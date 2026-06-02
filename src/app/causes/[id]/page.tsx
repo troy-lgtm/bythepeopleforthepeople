@@ -9,9 +9,13 @@ import {
   Share2,
 } from "lucide-react";
 import { CauseDeleteButton } from "@/components/CauseDeleteButton";
+import { CausePublishPanel } from "@/components/CausePublishPanel";
 import { PageShell } from "@/components/PageShell";
 import { SectionHeader } from "@/components/SectionHeader";
+import { buildCauseActivity } from "@/lib/cause-activity";
+import { encodeCauseForPublish } from "@/lib/cause-encoding";
 import { matchCause, matchCount } from "@/lib/cause-matcher";
+import { suggestForCause } from "@/lib/cause-suggestions";
 import { readCauseById, readCauses } from "@/lib/causes";
 
 type CausePageProps = {
@@ -26,11 +30,33 @@ export async function generateMetadata({
   const { id } = await params;
   const cause = await readCauseById(id);
   if (!cause) return { title: "Cause not found" };
+  const matches = matchCause(cause);
+  const ogParams = new URLSearchParams({
+    title: cause.title,
+    outcome: cause.outcome,
+    emoji: cause.emoji ?? "★",
+    matches: String(matchCount(matches)),
+    reps: String(matches.reps.length),
+    jurisdictions: cause.jurisdictions.slice(0, 3).join("|"),
+  });
+  const ogUrl = `/og/cause?${ogParams.toString()}`;
   return {
     title: cause.title,
     description: cause.outcome,
     alternates: { canonical: `/causes/${cause.id}` },
     robots: { index: false, follow: false },
+    openGraph: {
+      title: cause.title,
+      description: cause.outcome,
+      type: "article",
+      images: [{ url: ogUrl, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: cause.title,
+      description: cause.outcome,
+      images: [ogUrl],
+    },
   };
 }
 
@@ -41,6 +67,19 @@ export default async function CausePage({ params }: CausePageProps) {
   const causes = await readCauses();
   const matches = matchCause(cause);
   const total = matchCount(matches);
+  const activity = buildCauseActivity(matches, cause.createdAt);
+  const suggestions = suggestForCause(cause);
+  const encoded = encodeCauseForPublish(cause);
+  const feedUrl = `https://bythepeopleforthepeople.com/feed/causes/${encoded}.xml`;
+  const causeOgParams = new URLSearchParams({
+    title: cause.title,
+    outcome: cause.outcome,
+    emoji: cause.emoji ?? "★",
+    matches: String(total),
+    reps: String(matches.reps.length),
+    jurisdictions: cause.jurisdictions.slice(0, 3).join("|"),
+  });
+  const causeOgUrl = `https://bythepeopleforthepeople.com/og/cause?${causeOgParams.toString()}`;
 
   return (
     <PageShell>
@@ -290,6 +329,115 @@ export default async function CausePage({ params }: CausePageProps) {
           </div>
         </section>
       ) : null}
+
+      <section className="border-y border-record-200 bg-white">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8">
+          <article>
+            <SectionHeader
+              eyebrow="Activity log"
+              title={
+                activity.daysTracked === 0
+                  ? "You started tracking this today"
+                  : `Since you started tracking this ${activity.daysTracked} day${activity.daysTracked === 1 ? "" : "s"} ago`
+              }
+              description={
+                activity.events.length === 0
+                  ? "No matched records have moved yet. Coverage expands as adapters land; missing means missing."
+                  : `${activity.movedSinceCauseCreated} of ${activity.totalMatched} matched records moved since you started tracking.`
+              }
+            />
+            <ol className="mt-6 grid gap-3">
+              {activity.events.length === 0 ? (
+                <li className="rounded-lg border border-record-200 bg-paper-50 p-4 text-sm leading-6 text-ink-700">
+                  No timeline events yet for matched records. Activity surfaces
+                  here as ingestion runs.
+                </li>
+              ) : (
+                activity.events.map((event, idx) => (
+                  <li key={`${event.href}-${idx}`}>
+                    <Link
+                      href={event.href}
+                      className="block rounded-lg border border-record-200 bg-white p-4 shadow-line transition hover:border-civic-500"
+                    >
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span
+                          className={
+                            event.sinceCauseCreated
+                              ? "rounded-full border border-civic-100 bg-civic-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-civic-700"
+                              : "rounded-full border border-record-200 bg-paper-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-600"
+                          }
+                        >
+                          {event.sinceCauseCreated ? "Since you started" : "Before tracking"}
+                        </span>
+                        <span className="font-mono text-xs text-ink-600">
+                          {event.date}
+                        </span>
+                        <span className="rounded-full bg-paper-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-700">
+                          {event.type === "bill_action"
+                            ? "Bill"
+                            : event.type === "local_meeting"
+                              ? "Local"
+                              : "Topic"}
+                        </span>
+                      </div>
+                      <h3 className="mt-2 text-sm font-semibold text-ink-950">
+                        {event.title}
+                      </h3>
+                      <p className="mt-1 text-xs leading-5 text-ink-700">
+                        {event.detail}
+                      </p>
+                    </Link>
+                  </li>
+                ))
+              )}
+            </ol>
+          </article>
+          <aside className="grid content-start gap-4">
+            <article className="rounded-lg border border-record-200 bg-paper-50 p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-civic-700">
+                Other things you might want to track
+              </p>
+              <h2 className="mt-1 text-lg font-semibold text-ink-950">
+                Related starter causes
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-ink-700">
+                Adjacent civic concerns that share topics or keywords with
+                your cause. Each opens the wizard pre-filled.
+              </p>
+              {suggestions.length === 0 ? (
+                <p className="mt-4 text-xs leading-5 text-ink-600">
+                  No related starter causes match yet. Refine keywords on
+                  your cause to surface more.
+                </p>
+              ) : (
+                <ul className="mt-4 grid gap-2">
+                  {suggestions.map((s) => (
+                    <li key={s.starter.id}>
+                      <Link
+                        href="/causes/new"
+                        className="flex items-start gap-3 rounded-md border border-record-200 bg-white p-3 transition hover:border-civic-500"
+                      >
+                        <span className="text-xl" aria-hidden="true">
+                          {s.starter.emoji}
+                        </span>
+                        <span className="grid">
+                          <span className="text-sm font-semibold text-ink-950">
+                            {s.starter.title}
+                          </span>
+                          <span className="mt-1 text-xs leading-5 text-ink-600">
+                            {s.reasons[0] ?? "Adjacent topic"}
+                          </span>
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </article>
+            <CausePublishPanel feedUrl={feedUrl} causeOgUrl={causeOgUrl} />
+          </aside>
+        </div>
+      </section>
 
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <SectionHeader

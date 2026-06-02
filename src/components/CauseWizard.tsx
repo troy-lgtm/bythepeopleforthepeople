@@ -1,15 +1,85 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, Plus, Sparkles, X } from "lucide-react";
+import { AlertCircle, ArrowRight, Plus, Sparkles, X } from "lucide-react";
 import { STARTER_CAUSES, type StarterCause } from "@/data/starter-causes";
 
 type ExistingCause = {
   id: string;
   title: string;
+  emoji?: string;
+  topics: string[];
+  watchTermsAny: string[];
+  jurisdictions: string[];
 };
+
+type OverlapHit = {
+  causeId: string;
+  causeTitle: string;
+  causeEmoji?: string;
+  sharedTopics: string[];
+  sharedKeywords: string[];
+  sharedJurisdictions: string[];
+  similarity: number;
+};
+
+function detectOverlapClient(
+  candidate: {
+    title: string;
+    topics: string[];
+    watchTermsAny: string[];
+    jurisdictions: string[];
+  },
+  existing: ExistingCause[],
+): OverlapHit[] {
+  if (existing.length === 0) return [];
+  const norm = (xs: string[]) =>
+    new Set(xs.filter(Boolean).map((x) => x.toLowerCase()));
+  const candTopics = norm(candidate.topics);
+  const candKeywords = norm(candidate.watchTermsAny);
+  const candJur = norm(candidate.jurisdictions);
+  const candTitleLower = candidate.title.toLowerCase();
+  const hits: OverlapHit[] = [];
+  for (const ex of existing) {
+    const exTopics = norm(ex.topics);
+    const exKeywords = norm(ex.watchTermsAny);
+    const exJur = norm(ex.jurisdictions);
+    const sharedTopics = [...candTopics].filter((t) => exTopics.has(t));
+    const sharedKeywords = [...candKeywords].filter((k) => exKeywords.has(k));
+    const sharedJur = [...candJur].filter((j) => exJur.has(j));
+    const topicScore =
+      candTopics.size + exTopics.size === 0
+        ? 0
+        : (2 * sharedTopics.length) / (candTopics.size + exTopics.size);
+    const keywordScore =
+      candKeywords.size + exKeywords.size === 0
+        ? 0
+        : (2 * sharedKeywords.length) / (candKeywords.size + exKeywords.size);
+    const jurScore =
+      candJur.size + exJur.size === 0
+        ? 0
+        : (2 * sharedJur.length) / (candJur.size + exJur.size);
+    let similarity = 0.5 * topicScore + 0.35 * keywordScore + 0.15 * jurScore;
+    if (candTitleLower && candTitleLower === ex.title.toLowerCase()) {
+      similarity = Math.max(similarity, 1);
+    }
+    if (similarity >= 0.4 || sharedTopics.length + sharedKeywords.length >= 3) {
+      hits.push({
+        causeId: ex.id,
+        causeTitle: ex.title,
+        causeEmoji: ex.emoji,
+        sharedTopics,
+        sharedKeywords,
+        sharedJurisdictions: sharedJur,
+        similarity,
+      });
+    }
+  }
+  hits.sort((a, b) => b.similarity - a.similarity);
+  return hits;
+}
 
 type CauseWizardProps = {
   existing: ExistingCause[];
@@ -36,6 +106,35 @@ export function CauseWizard({
   useEffect(() => {
     setJurisdictions(defaultJurisdictions);
   }, [defaultJurisdictions]);
+
+  const overlap = useMemo<OverlapHit[]>(() => {
+    if (mode === "pick") {
+      if (!picked) return [];
+      return detectOverlapClient(
+        {
+          title: picked.title,
+          topics: picked.topics,
+          watchTermsAny: picked.watchTermsAny,
+          jurisdictions,
+        },
+        existing,
+      );
+    }
+    const kw = customKeywords
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (!customTitle.trim() && kw.length === 0) return [];
+    return detectOverlapClient(
+      {
+        title: customTitle.trim(),
+        topics: [],
+        watchTermsAny: kw,
+        jurisdictions,
+      },
+      existing,
+    );
+  }, [mode, picked, customTitle, customKeywords, jurisdictions, existing]);
 
   function addJurisdiction(value: string) {
     const v = value.trim();
@@ -281,6 +380,54 @@ export function CauseWizard({
           </button>
         </form>
       </div>
+
+      {overlap.length > 0 ? (
+        <div className="rounded-lg border border-notice-100 bg-notice-50 p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-notice-500" aria-hidden="true" />
+            <div>
+              <p className="text-sm font-semibold text-notice-500">
+                You already track {overlap.length === 1 ? "a cause" : `${overlap.length} causes`} that overlap this one.
+              </p>
+              <p className="mt-1 text-xs leading-5 text-ink-700">
+                Sharpening an existing cause usually beats duplicating. Open
+                one of these to refine it, or proceed below if this is a
+                genuinely distinct angle.
+              </p>
+              <ul className="mt-3 grid gap-2">
+                {overlap.slice(0, 3).map((hit) => (
+                  <li key={hit.causeId}>
+                    <Link
+                      href={`/causes/${hit.causeId}`}
+                      className="flex items-start gap-3 rounded-md border border-record-200 bg-white p-3 hover:border-civic-500"
+                    >
+                      {hit.causeEmoji ? (
+                        <span className="text-xl" aria-hidden="true">
+                          {hit.causeEmoji}
+                        </span>
+                      ) : null}
+                      <span className="grid">
+                        <span className="text-sm font-semibold text-ink-950">
+                          {hit.causeTitle}
+                        </span>
+                        <span className="mt-1 text-xs leading-5 text-ink-700">
+                          {Math.round(hit.similarity * 100)}% similarity
+                          {hit.sharedTopics.length
+                            ? ` · shared topics: ${hit.sharedTopics.slice(0, 3).join(", ")}`
+                            : ""}
+                          {hit.sharedKeywords.length
+                            ? ` · shared keywords: ${hit.sharedKeywords.slice(0, 3).join(", ")}`
+                            : ""}
+                        </span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {error ? (
         <p className="rounded-md border border-notice-100 bg-notice-50 px-3 py-2 text-xs leading-5 text-notice-500">

@@ -16,7 +16,14 @@ export const metadata: Metadata = {
 export default async function NewCausePage() {
   const place = await readPlace();
   const causes = await readCauses();
-  const existing = causes.map((c) => ({ id: c.id, title: c.title }));
+  const existing = causes.map((c) => ({
+    id: c.id,
+    title: c.title,
+    emoji: c.emoji,
+    topics: c.topics,
+    watchTermsAny: c.watchTermsAny,
+    jurisdictions: c.jurisdictions,
+  }));
   const defaultJurisdictions: string[] = [];
   if (place?.state) {
     const stateName = STATE_NAMES[place.state];
