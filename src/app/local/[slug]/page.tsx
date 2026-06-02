@@ -25,6 +25,7 @@ import { ReportCorrection } from "@/components/ReportCorrection";
 import { ShareRecordButtons } from "@/components/ShareRecordButtons";
 import { StatusBadge } from "@/components/StatusBadge";
 import { TakeAction } from "@/components/TakeAction";
+import { TrackAsCauseButton } from "@/components/TrackAsCauseButton";
 import { VoteTable } from "@/components/VoteTable";
 import { WatchButton } from "@/components/WatchButton";
 import { breadcrumbSchema, localDecisionSchema } from "@/lib/schema";
@@ -136,6 +137,17 @@ export default async function LocalDecisionPage({ params }: LocalPageProps) {
             <ReportCorrection
               recordHref={`/local/${decision.slug}`}
               recordTitle={decision.title}
+            />
+            <TrackAsCauseButton
+              suggestedTitle={`Track ${decision.title.split(":")[0]?.trim() ?? decision.title.slice(0, 60)}`}
+              suggestedOutcome={`I want to follow ${decision.title} (${decision.jurisdiction}) and related ordinances as they move.`}
+              suggestedTopics={decision.topics}
+              suggestedJurisdictions={[decision.jurisdiction]}
+              suggestedKeywords={decision.topics.concat([
+                decision.departmentOrCommittee,
+                decision.slug.replace(/-/g, " "),
+              ])}
+              emoji="🏛"
             />
           </div>
           <div className="mt-5 grid gap-8 lg:grid-cols-[1fr_0.42fr]">

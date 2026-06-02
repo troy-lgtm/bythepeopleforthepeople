@@ -23,9 +23,11 @@ const TYPE_LABEL: Record<SearchDoc["type"], string> = {
   person: "Person",
   committee: "Committee",
   connector: "Source",
+  cause: "Cause",
 };
 
 const TYPE_ORDER: SearchDoc["type"][] = [
+  "cause",
   "senator",
   "rep",
   "bill",

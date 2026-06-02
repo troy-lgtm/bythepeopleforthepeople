@@ -25,6 +25,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { PlainLanguageCallout } from "@/components/PlainLanguageCallout";
 import { ReportCorrection } from "@/components/ReportCorrection";
 import { ShareRecordButtons } from "@/components/ShareRecordButtons";
+import { TrackAsCauseButton } from "@/components/TrackAsCauseButton";
 import { StakeholderList } from "@/components/StakeholderList";
 import { StatusBadge } from "@/components/StatusBadge";
 import { TakeAction } from "@/components/TakeAction";
@@ -134,6 +135,16 @@ export default async function BillDetailPage({ params }: BillPageProps) {
             <ReportCorrection
               recordHref={`/bills/${bill.slug}`}
               recordTitle={bill.title}
+            />
+            <TrackAsCauseButton
+              suggestedTitle={`Track ${bill.title.split(":")[0]?.trim() ?? bill.title.slice(0, 60)}`}
+              suggestedOutcome={`I want to follow ${bill.title} (${bill.jurisdiction}) and related records as they move.`}
+              suggestedTopics={bill.topics}
+              suggestedJurisdictions={[bill.jurisdiction]}
+              suggestedKeywords={bill.topics.concat([
+                bill.slug.replace(/-/g, " "),
+              ])}
+              emoji="📜"
             />
           </div>
           <div className="mt-5 grid gap-8 lg:grid-cols-[1fr_0.42fr]">

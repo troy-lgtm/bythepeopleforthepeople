@@ -9,7 +9,16 @@ import { allFederalReps, slugForRep } from "@/lib/federal-reps";
 
 export type SearchDoc = {
   id: string;
-  type: "rep" | "senator" | "bill" | "local" | "topic" | "person" | "committee" | "connector";
+  type:
+    | "rep"
+    | "senator"
+    | "bill"
+    | "local"
+    | "topic"
+    | "person"
+    | "committee"
+    | "connector"
+    | "cause";
   title: string;
   subtitle?: string;
   href: string;

@@ -11,6 +11,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
 import { ReportCorrection } from "@/components/ReportCorrection";
 import { SectionHeader } from "@/components/SectionHeader";
+import { TrackAsCauseButton } from "@/components/TrackAsCauseButton";
 import { WatchButton } from "@/components/WatchButton";
 import { allRepSlugs, getRepBySlug } from "@/lib/federal-reps";
 import { breadcrumbSchema } from "@/lib/schema";
@@ -124,6 +125,17 @@ export default async function FederalRepPage({ params }: FederalRepPageProps) {
             <ReportCorrection
               recordHref={`/federal/${slug}`}
               recordTitle={rep.name}
+            />
+            <TrackAsCauseButton
+              suggestedTitle={`Track ${rep.name}`}
+              suggestedOutcome={`I want to track ${rep.name}'s votes, sponsorships, and committee actions in ${chamber} representing ${district}.`}
+              suggestedTopics={[]}
+              suggestedJurisdictions={[
+                rep.state ?? "",
+                "United States Congress",
+              ].filter(Boolean)}
+              suggestedKeywords={[rep.name, rep.state ?? ""].filter(Boolean)}
+              emoji="🪪"
             />
           </div>
           <div className="mt-5 grid gap-8 lg:grid-cols-[1fr_0.45fr]">

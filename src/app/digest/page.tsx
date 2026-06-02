@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Mail, Send, ShieldCheck } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { SectionHeader } from "@/components/SectionHeader";
+import { readCauses } from "@/lib/causes";
 import { buildDigest, renderDigestHtml } from "@/lib/digest";
 import { readPlace } from "@/lib/place";
 import { readWatchlist } from "@/lib/watchlist";
@@ -17,7 +18,8 @@ const BASE = "https://bythepeopleforthepeople.com";
 export default async function DigestPage() {
   const place = await readPlace();
   const watchedIds = await readWatchlist();
-  const payload = buildDigest({ zip: place?.zip, watchedIds });
+  const causes = await readCauses();
+  const payload = buildDigest({ zip: place?.zip, watchedIds, causes });
   const html = renderDigestHtml(payload, BASE);
   const itemCount =
     payload.recentChanges.length +

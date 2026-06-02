@@ -16,7 +16,8 @@ type SearchDoc = {
     | "topic"
     | "person"
     | "committee"
-    | "connector";
+    | "connector"
+    | "cause";
   title: string;
   subtitle?: string;
   href: string;
@@ -35,6 +36,7 @@ const TYPE_LABEL: Record<SearchDoc["type"], string> = {
   person: "Person",
   committee: "Committee",
   connector: "Source",
+  cause: "Your cause",
 };
 
 const TYPE_TONE: Record<SearchDoc["type"], string> = {
@@ -46,6 +48,7 @@ const TYPE_TONE: Record<SearchDoc["type"], string> = {
   person: "bg-paper-50 text-ink-700 border-record-200",
   committee: "bg-paper-50 text-ink-700 border-record-200",
   connector: "bg-paper-100 text-ink-700 border-record-200",
+  cause: "bg-civic-50 text-civic-700 border-civic-500",
 };
 
 function score(doc: SearchDoc, q: string): number {
@@ -67,6 +70,7 @@ function score(doc: SearchDoc, q: string): number {
     }
   }
   if (doc.subtitle?.toLowerCase().includes(ql)) s += 15;
+  if (doc.type === "cause" && s > 0) s += 300;
   return s;
 }
 
@@ -85,14 +89,38 @@ export function UniversalSearch({ className }: { className?: string }) {
     setTimeout(() => triggerRef.current?.focus(), 10);
   }, []);
 
-  // Lazy-load the search index on first open
+  // Lazy-load the search index + user's causes on first open
   useEffect(() => {
     if (!open || docs || loading) return;
     setLoading(true);
-    fetch("/api/search-index")
-      .then((r) => r.json())
-      .then((j) => {
-        if (Array.isArray(j.docs)) setDocs(j.docs as SearchDoc[]);
+    Promise.all([
+      fetch("/api/search-index").then((r) => r.json()).catch(() => null),
+      fetch("/api/causes").then((r) => r.json()).catch(() => null),
+    ])
+      .then(([idx, causesResp]) => {
+        const baseDocs: SearchDoc[] = Array.isArray(idx?.docs) ? idx.docs : [];
+        const causes = Array.isArray(causesResp?.data?.causes)
+          ? causesResp.data.causes
+          : [];
+        const causeDocs: SearchDoc[] = causes.map(
+          (c: {
+            id: string;
+            title: string;
+            outcome: string;
+            topics: string[];
+            jurisdictions: string[];
+            watchTermsAny: string[];
+            emoji?: string;
+          }) => ({
+            id: `cause-${c.id}`,
+            type: "cause",
+            title: `${c.emoji ? c.emoji + " " : ""}${c.title}`,
+            subtitle: c.outcome.slice(0, 120),
+            href: `/causes/${c.id}`,
+            keywords: [c.title, c.outcome, ...c.topics, ...c.jurisdictions, ...c.watchTermsAny],
+          }),
+        );
+        setDocs([...causeDocs, ...baseDocs]);
       })
       .catch(() => null)
       .finally(() => setLoading(false));

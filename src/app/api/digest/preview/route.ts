@@ -1,4 +1,5 @@
 import { type NextRequest } from "next/server";
+import { readCauses } from "@/lib/causes";
 import { buildDigest, renderDigestHtml, renderDigestText } from "@/lib/digest";
 import { readPlace } from "@/lib/place";
 import { readWatchlist } from "@/lib/watchlist";
@@ -13,7 +14,8 @@ export async function GET(request: NextRequest) {
   const format = url.searchParams.get("format") ?? "json";
   const place = await readPlace();
   const watchedIds = await readWatchlist();
-  const payload = buildDigest({ zip: place?.zip, watchedIds });
+  const causes = await readCauses();
+  const payload = buildDigest({ zip: place?.zip, watchedIds, causes });
 
   if (format === "text") {
     return new Response(renderDigestText(payload, BASE), {

@@ -7,6 +7,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-22",
+    kind: "product",
+    title: "Causes v2: edit, action plan, digest integration, track-as-cause, search",
+    body:
+      "Causes become the brain of the product. New /causes/[id]/edit in-place editor; new /causes/[id]/actions five-step structured action plan; /digest and /api/digest/preview now build per-cause sections when the user has causes; new Track as cause button on every bill, local file, and federal-rep page that pre-fills the cause with the record's topics + jurisdiction; user's causes now appear at the top of CMD+K results with a Your cause label. Methodology guardrails unchanged: product never scores alignment of any record or rep to a cause; user judges.",
+  },
+  {
     date: "2026-05-21",
     kind: "product",
     title: "Causes important to you (THE angle)",
