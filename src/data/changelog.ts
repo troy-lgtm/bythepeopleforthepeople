@@ -7,6 +7,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-23",
+    kind: "product",
+    title: "Causes v3: per-cause OG, RSS, suggestions, activity log, overlap detection",
+    body:
+      "Per-cause OG image at /og/cause renders the cause title, outcome, matched counts, and jurisdictions in the brand voice. Opt-in per-cause RSS at /feed/causes/<encoded>.xml lets anyone subscribe in any RSS reader — the cause is base64url-encoded into the URL itself (no server storage; publishing is explicit and the URL is public). Related-cause suggestions on every cause page surface 4 starter cards that share topics or keywords. Cause activity log shows recent record movement since you started tracking (event type, date, since-or-before marker). Wizard now detects overlap with existing causes (Jaccard across topics/keywords/jurisdictions; threshold 0.4 OR shared 3+) and surfaces a sharpen-instead-of-duplicate warning with links to the existing causes.",
+  },
+  {
     date: "2026-05-22",
     kind: "product",
     title: "Causes v2: edit, action plan, digest integration, track-as-cause, search",
