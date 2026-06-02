@@ -8,10 +8,10 @@ import { UniversalSearch } from "./UniversalSearch";
 
 const navItems = [
   { href: "/", label: "Home" },
+  { href: "/causes", label: "Causes" },
   { href: "/federal", label: "Reps" },
-  { href: "/activity", label: "Upcoming" },
   { href: "/near-me", label: "Near me" },
-  { href: "/watchlist", label: "Watchlist" },
+  { href: "/activity", label: "Upcoming" },
   { href: "/sources", label: "Sources" },
 ];
 

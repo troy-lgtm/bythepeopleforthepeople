@@ -6,6 +6,9 @@ export const revalidate = 3600;
 const BASE = "https://bythepeopleforthepeople.com";
 const PATHS = [
   "",
+  "/causes",
+  "/causes/new",
+  "/causes/starters",
   "/explore",
   "/search",
   "/activity",

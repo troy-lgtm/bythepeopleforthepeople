@@ -75,4 +75,4 @@ export function repsByState(): Record<string, FederalRep[]> {
   return map;
 }
 
-export { getRepsForPlace };
+export { getRepsForPlace, type FederalRep };
