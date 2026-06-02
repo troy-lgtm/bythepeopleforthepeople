@@ -7,6 +7,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-24",
+    kind: "product",
+    title: "Funnel v1: live hero matching, no more dead ends, real return loop",
+    body:
+      "Three conversion fixes. (1) Live hero matching: the home page now matches a cause to indexed records as you type — see the count before you commit, then continue into a pre-filled wizard. (2) No more dead ends: a cause that matches nothing now shows the closest coverage by word overlap (labeled loose, never exact), one-tap refine/search/digest actions, and your actual federal representatives by ZIP instead of a blank panel; the day-one activity log offers next steps instead of an empty box. (3) Real return loop: the digest send endpoint is documented as live (Resend, operator-secret auth, dry-run) and now carries your causes, so delivered digests include per-cause sections. Methodology unchanged: loose matches are labeled non-exact, no alignment scoring anywhere, missing still means missing.",
+  },
+  {
     date: "2026-05-23",
     kind: "product",
     title: "Causes v3: per-cause OG, RSS, suggestions, activity log, overlap detection",

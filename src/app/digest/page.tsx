@@ -75,9 +75,15 @@ export default async function DigestPage() {
               </li>
             </ul>
             <p className="mt-4 text-xs leading-5 text-ink-600">
-              Once set, the send-stub at `/api/digest/send` (to be added) will
-              accept POST requests authenticated by `DIGEST_SEND_SECRET` and
-              dispatch this HTML through Resend.
+              The send endpoint at{" "}
+              <span className="font-mono">/api/digest/send</span> is live. POST
+              with an <span className="font-mono">x-digest-send-secret</span>{" "}
+              header and a JSON body of{" "}
+              <span className="font-mono">{`{ to, zip, causes, watchedIds }`}</span>{" "}
+              to dispatch this exact HTML through Resend. Add{" "}
+              <span className="font-mono">{`{ "dryRun": true }`}</span> to render
+              and validate the payload without sending. Once the two keys above
+              are set in the environment, delivery is on.
             </p>
           </section>
 

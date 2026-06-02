@@ -84,18 +84,29 @@ function detectOverlapClient(
 type CauseWizardProps = {
   existing: ExistingCause[];
   defaultJurisdictions: string[];
+  initialTitle?: string;
+  initialKeywords?: string;
 };
 
 export function CauseWizard({
   existing,
   defaultJurisdictions,
+  initialTitle,
+  initialKeywords,
 }: CauseWizardProps) {
   const router = useRouter();
-  const [mode, setMode] = useState<"pick" | "custom">("pick");
+  const prefilled = Boolean(initialTitle && initialTitle.trim());
+  const [mode, setMode] = useState<"pick" | "custom">(
+    prefilled ? "custom" : "pick",
+  );
   const [picked, setPicked] = useState<StarterCause | null>(null);
-  const [customTitle, setCustomTitle] = useState("");
-  const [customOutcome, setCustomOutcome] = useState("");
-  const [customKeywords, setCustomKeywords] = useState("");
+  const [customTitle, setCustomTitle] = useState(initialTitle?.trim() ?? "");
+  const [customOutcome, setCustomOutcome] = useState(
+    prefilled ? (initialTitle ?? "").trim() : "",
+  );
+  const [customKeywords, setCustomKeywords] = useState(
+    initialKeywords?.trim() ?? "",
+  );
   const [jurisdictions, setJurisdictions] = useState<string[]>(
     defaultJurisdictions,
   );

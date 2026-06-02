@@ -13,7 +13,12 @@ export const metadata: Metadata = {
   alternates: { canonical: "/causes/new" },
 };
 
-export default async function NewCausePage() {
+type NewCausePageProps = {
+  searchParams: Promise<{ title?: string; keywords?: string }>;
+};
+
+export default async function NewCausePage({ searchParams }: NewCausePageProps) {
+  const { title, keywords } = await searchParams;
   const place = await readPlace();
   const causes = await readCauses();
   const existing = causes.map((c) => ({
@@ -51,6 +56,8 @@ export default async function NewCausePage() {
         <CauseWizard
           existing={existing}
           defaultJurisdictions={defaultJurisdictions}
+          initialTitle={title}
+          initialKeywords={keywords}
         />
       </section>
     </PageShell>

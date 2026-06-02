@@ -213,3 +213,86 @@ export function matchCount(matches: CauseMatches): number {
     matches.connectors.length
   );
 }
+
+const STOPWORDS = new Set([
+  "the", "and", "for", "with", "that", "this", "from", "your", "you", "want",
+  "more", "less", "are", "not", "but", "our", "their", "its", "into", "than",
+  "then", "they", "them", "has", "have", "will", "would", "should", "could",
+  "about", "over", "under", "near", "onto", "all", "any", "get", "got", "let",
+  "make", "made", "keep", "stop", "stopping", "need", "needs", "people",
+  "public", "record", "records", "cause", "causes", "city", "county", "state",
+  "want", "like", "just", "also", "where", "when", "what", "who", "how",
+]);
+
+/**
+ * Tokenize free text into meaningful lowercased terms (>=4 chars, no stopwords).
+ * Used for loose matching and the live hero match-preview.
+ */
+export function tokenize(text: string): string[] {
+  const words = text
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length >= 4 && !STOPWORDS.has(w));
+  return Array.from(new Set(words));
+}
+
+export type LooseMatch = {
+  type: "bill" | "local" | "topic";
+  title: string;
+  href: string;
+  jurisdiction?: string;
+  sharedTerms: string[];
+};
+
+/**
+ * Last-resort matching for a cause that produced ZERO exact matches.
+ * Scores indexed records by raw word overlap against the cause's full text
+ * (title + outcome + topics + keywords), ignoring the curated topic/keyword
+ * gates. Honest by construction: results are labeled "closest coverage," not
+ * exact matches. Only routes with real pages (bills, local files, topics) are
+ * returned so every link resolves.
+ */
+export function looseMatches(cause: Cause, limit = 6): LooseMatch[] {
+  const tokens = tokenize(
+    `${cause.title} ${cause.outcome} ${cause.topics.join(" ")} ${cause.watchTermsAny.join(" ")}`,
+  );
+  if (tokens.length === 0) return [];
+
+  const scored: Array<LooseMatch & { score: number }> = [];
+  const scan = (haystack: string, base: Omit<LooseMatch, "sharedTerms">) => {
+    const lower = haystack.toLowerCase();
+    const shared = tokens.filter((t) => lower.includes(t));
+    if (shared.length > 0) {
+      scored.push({ ...base, sharedTerms: shared.slice(0, 4), score: shared.length });
+    }
+  };
+
+  for (const bill of bills) {
+    scan(
+      `${bill.title} ${bill.summary} ${bill.lastAction} ${bill.nextAction} ${bill.topics.join(" ")}`,
+      { type: "bill", title: bill.title, href: `/bills/${bill.slug}`, jurisdiction: bill.jurisdiction },
+    );
+  }
+  for (const decision of localDecisions) {
+    scan(
+      `${decision.title} ${decision.summary} ${decision.motionSummary} ${decision.topics.join(" ")}`,
+      { type: "local", title: decision.title, href: `/local/${decision.slug}`, jurisdiction: decision.jurisdiction },
+    );
+  }
+  for (const topic of topicProfiles) {
+    scan(`${topic.name} ${topic.summary} ${topic.watchPrompts.join(" ")}`, {
+      type: "topic",
+      title: topic.name,
+      href: `/topics/${topic.slug}`,
+    });
+  }
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, limit).map((m) => ({
+    type: m.type,
+    title: m.title,
+    href: m.href,
+    jurisdiction: m.jurisdiction,
+    sharedTerms: m.sharedTerms,
+  }));
+}
