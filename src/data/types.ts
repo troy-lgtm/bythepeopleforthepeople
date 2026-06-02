@@ -51,6 +51,18 @@ export type SourceRecord = {
   archiveUrl?: string;
 };
 
+export type Cause = {
+  id: string;
+  title: string;
+  outcome: string;
+  topics: string[];
+  jurisdictions: string[];
+  watchTermsAny: string[];
+  createdAt: string;
+  emoji?: string;
+  digestCadence?: "daily" | "weekly" | "monthly";
+};
+
 export type CorrectionLog = {
   id: string;
   date: string;

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Flame, Shield, ShieldCheck, Tent } from "lucide-react";
+import { ArrowRight, Flame, Shield, ShieldCheck, Sparkles, Tent } from "lucide-react";
 import type { ComponentType } from "react";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { AnswerEngine } from "@/components/AnswerEngine";
@@ -8,41 +8,44 @@ import { FreshnessBadge } from "@/components/FreshnessBadge";
 import { MissingDataPanel } from "@/components/MissingDataPanel";
 import { PageShell } from "@/components/PageShell";
 import { SectionHeader } from "@/components/SectionHeader";
+import { YourCauses } from "@/components/YourCauses";
 import { YourReps } from "@/components/YourReps";
 import { publicActivity } from "@/data/records";
 
 export default async function Home() {
   return (
     <PageShell>
-      {/* SECTION 1: Hero — one promise, one CTA */}
+      {/* SECTION 1: Hero — causes as the angle */}
       <section className="border-b border-record-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
             <p className="inline-flex rounded-full border border-record-200 bg-paper-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-civic-700">
-              Indexed from official records
+              Track what matters to you, with proof
             </p>
             <h1 className="mt-5 text-balance text-4xl font-semibold tracking-tight text-ink-950 sm:text-5xl lg:text-6xl">
-              Government accountability the public can actually use.
+              The causes you care about. The records that prove what is
+              happening.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-ink-700">
-              Search public decisions by the questions people actually ask:
-              who voted no, what changed, what happens next, whether it
-              affects your place, and where the official record proves it. No
-              partisan scoring. No endorsements. Missing data labeled missing.
+              Add a cause in your own words: safer streets, the wildfires
+              stopping, your rent not rising. The product matches indexed
+              public records, votes, and reps. Nonpartisan. Source-anchored.
+              We do not score alignment; you judge.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link
-                href="/explore"
+                href="/causes/new"
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-ink-950 px-5 text-sm font-semibold text-white transition hover:bg-ink-800"
               >
-                Ask the record
+                <Sparkles className="h-4 w-4" aria-hidden="true" />
+                Add a cause
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
               <Link
-                href="/about"
+                href="/explore"
                 className="inline-flex h-12 items-center justify-center rounded-md border border-record-200 bg-white px-5 text-sm font-semibold text-ink-950 shadow-line transition hover:border-civic-500"
               >
-                How we stay nonpartisan
+                Ask the record instead
               </Link>
             </div>
             <div className="mt-6">
@@ -52,73 +55,85 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* SECTION 2: Your place + reps */}
+      {/* SECTION 2: Your causes — the main personal surface */}
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <SectionHeader
-          eyebrow="Personalize"
-          title="Start with your place."
-          description="Set your ZIP once. The site personalizes every page to your district, surfaces your representatives, and filters records to your jurisdiction."
+          eyebrow="Causes important to you"
+          title="The thing that matters most."
+          description="Cookie-private by default. Anonymous to share. Source-anchored throughout."
         />
         <div className="mt-6">
-          <YourReps />
+          <YourCauses />
         </div>
       </section>
 
-      {/* SECTION 3: Top issues + Today's record changes */}
+      {/* SECTION 3: Your place + reps */}
       <section className="border-y border-record-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <SectionHeader
-            eyebrow="Top issues for people"
-            title="Fires, homelessness, and crime. Start with the record."
-            description="The issues people ask about first. Each page surfaces indexed records, labels what is not yet ingested, and lets you watch for new actions without inventing results."
+            eyebrow="Personalize the place"
+            title="Set your ZIP, get your reps."
+            description="Your causes auto-default to your state and city jurisdictions. Set your ZIP once and the rest of the site personalizes."
           />
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
-            <TopIssueCard
-              icon={Flame}
-              topic="Fires"
-              href="/topics/fires"
-              body="Fire department reports, wildfire incidents, evacuation orders, fire-code ordinances, and prevention budget actions."
-            />
-            <TopIssueCard
-              icon={Tent}
-              topic="Homelessness"
-              href="/topics/homelessness"
-              body="LAHSA reports, county HHAP actions, council motions on encampments and shelter, ordinance updates, and audit findings."
-            />
-            <TopIssueCard
-              icon={Shield}
-              topic="Crime"
-              href="/topics/crime"
-              body="Police Commission actions, District Attorney charging policies, public-safety motions, court filings on policing, and crime data."
-            />
+          <div className="mt-6">
+            <YourReps />
           </div>
+        </div>
+      </section>
 
-          <div className="mt-12 grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-            <div>
-              <SectionHeader
-                eyebrow="Today's record changes"
-                title="What moved in the public record."
-                description="Source-attributed daily changes. No outrage feed; every item links to its primary source."
-              />
-              <div className="mt-6">
-                <DailyChangeDigest />
-              </div>
+      {/* SECTION 4: Top issues + today's record changes */}
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <SectionHeader
+          eyebrow="Browse by issue"
+          title="Three issues people ask about first."
+          description="The editorial taxonomy: fires, homelessness, crime. Causes are personal goals; topics are the editorial structure."
+        />
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <TopIssueCard
+            icon={Flame}
+            topic="Fires"
+            href="/topics/fires"
+            body="Fire department reports, wildfire incidents, evacuation orders, fire-code ordinances, and prevention budget actions."
+          />
+          <TopIssueCard
+            icon={Tent}
+            topic="Homelessness"
+            href="/topics/homelessness"
+            body="LAHSA reports, county HHAP actions, council motions on encampments and shelter, ordinance updates, and audit findings."
+          />
+          <TopIssueCard
+            icon={Shield}
+            topic="Crime"
+            href="/topics/crime"
+            body="Police Commission actions, District Attorney charging policies, public-safety motions, court filings on policing, and crime data."
+          />
+        </div>
+
+        <div className="mt-12 grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+          <div>
+            <SectionHeader
+              eyebrow="Today's record changes"
+              title="What moved in the public record."
+              description="Source-attributed daily changes. No outrage feed; every item links to its primary source."
+            />
+            <div className="mt-6">
+              <DailyChangeDigest />
             </div>
-            <div>
-              <SectionHeader
-                eyebrow="Recent activity"
-                title="Dated public-record events."
-                description="Floor votes, council actions, agenda posts. Avoids live-update claims unless a source change is indexed."
-              />
-              <div className="mt-6">
-                <ActivityFeed events={publicActivity.slice(0, 4)} dense />
-              </div>
+          </div>
+          <div>
+            <SectionHeader
+              eyebrow="Recent activity"
+              title="Dated public-record events."
+              description="Floor votes, council actions, agenda posts. Avoids live-update claims unless a source change is indexed."
+            />
+            <div className="mt-6">
+              <ActivityFeed events={publicActivity.slice(0, 4)} dense />
             </div>
           </div>
         </div>
       </section>
 
-      {/* SECTION 4: Methodology + trust */}
+      {/* SECTION 5: Methodology + trust */}
       <section className="border-t border-record-200 bg-white">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[0.7fr_1.3fr] lg:px-8">
           <div className="rounded-lg border border-ink-800 bg-ink-950 p-6 text-white">
@@ -127,9 +142,10 @@ export default async function Home() {
               Trust is the product.
             </h2>
             <p className="mt-4 text-base leading-7 text-white/78">
-              No endorsements. No partisan scoring. No outrage feed. Missing
-              data is labeled missing. Every factual answer carries a source
-              trail. Operators, funding, and corrections are public.
+              No endorsements. No partisan scoring. No outrage feed. Causes
+              are user-defined goals; the product never scores alignment.
+              Missing data is labeled missing. Operators, funding, and
+              corrections are public.
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
               <Link

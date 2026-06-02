@@ -21,6 +21,9 @@ export function Footer() {
             Product
           </p>
           <div className="mt-3 grid gap-2 text-sm text-ink-700">
+            <Link href="/causes" className="hover:text-civic-700">
+              Causes important to you
+            </Link>
             <Link href="/explore" className="hover:text-civic-700">
               Ask records
             </Link>

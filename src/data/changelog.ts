@@ -8,6 +8,13 @@ export type ChangelogEntry = {
 export const changelog: ChangelogEntry[] = [
   {
     date: "2026-05-21",
+    kind: "product",
+    title: "Causes important to you (THE angle)",
+    body:
+      "Reframed the product around what people actually want — their causes, in their own words. New /causes index, /causes/new wizard with 12 balanced starter cards, /causes/[id] detail with matched bills/local files/topics/reps, cause-scoped digest preview, anonymous shareable card. Home page leads with Your causes. Causes stay private in a first-party cookie unless explicitly shared. The product matches indexed records to a cause via topic + jurisdiction + keyword overlap; the user judges alignment. The product never scores any rep or record as for/against a cause.",
+  },
+  {
+    date: "2026-05-21",
     kind: "coverage",
     title: "RSS, iCal, per-connector pages",
     body:
