@@ -3,7 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   ArrowRight,
+  CalendarPlus,
+  Compass,
   Mail,
+  MapPin,
   MessageCircle,
   Pencil,
   Share2,
@@ -14,9 +17,12 @@ import { PageShell } from "@/components/PageShell";
 import { SectionHeader } from "@/components/SectionHeader";
 import { buildCauseActivity } from "@/lib/cause-activity";
 import { encodeCauseForPublish } from "@/lib/cause-encoding";
-import { matchCause, matchCount } from "@/lib/cause-matcher";
+import { looseMatches, matchCause, matchCount } from "@/lib/cause-matcher";
+import { slugForRep } from "@/lib/federal-reps";
 import { suggestForCause } from "@/lib/cause-suggestions";
 import { readCauseById, readCauses } from "@/lib/causes";
+import { readPlace } from "@/lib/place";
+import { getRepsForPlace, type FederalRep } from "@/lib/reps";
 
 type CausePageProps = {
   params: Promise<{ id: string }>;
@@ -65,10 +71,42 @@ export default async function CausePage({ params }: CausePageProps) {
   const cause = await readCauseById(id);
   if (!cause) notFound();
   const causes = await readCauses();
+  const place = await readPlace();
   const matches = matchCause(cause);
   const total = matchCount(matches);
+  const hasRecordMatches =
+    matches.bills.length > 0 ||
+    matches.locals.length > 0 ||
+    matches.exploreItems.length > 0 ||
+    matches.topics.length > 0;
+  const loose = hasRecordMatches ? [] : looseMatches(cause);
   const activity = buildCauseActivity(matches, cause.createdAt);
   const suggestions = suggestForCause(cause);
+
+  // Reps: prefer the user's actual place-based reps (accurate to their
+  // district). Fall back to jurisdiction-string matches when no place is set.
+  let repsToShow: Array<{ name: string; sub: string; slug: string }> = [];
+  if (place) {
+    const { houseRep, senators } = getRepsForPlace(place.state, place.cd);
+    const list = [houseRep, ...senators].filter(Boolean) as FederalRep[];
+    repsToShow = list.map((r) => ({
+      name: r.name,
+      sub:
+        r.type === "sen"
+          ? `U.S. Senate · ${r.state}`
+          : `U.S. House · ${r.state}-${r.district}`,
+      slug: slugForRep(r),
+    }));
+  } else {
+    repsToShow = matches.reps.slice(0, 30).map((m) => ({
+      name: m.rep.name,
+      sub:
+        m.rep.type === "sen"
+          ? `U.S. Senate · ${m.rep.state}`
+          : `U.S. House · ${m.rep.state}-${m.rep.district}`,
+      slug: m.slug,
+    }));
+  }
   const encoded = encodeCauseForPublish(cause);
   const feedUrl = `https://bythepeopleforthepeople.com/feed/causes/${encoded}.xml`;
   const causeOgParams = new URLSearchParams({
@@ -174,22 +212,136 @@ export default async function CausePage({ params }: CausePageProps) {
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <SectionHeader
           eyebrow="Matched records"
-          title={`${total} indexed records touch this cause`}
-          description="Bills, council files, topics, and source connectors that overlap your topics, jurisdictions, or keywords. We do not score alignment to your outcome; you judge each record on its own."
+          title={
+            hasRecordMatches
+              ? `${total} indexed records touch this cause`
+              : "No exact matches yet — here's your next move"
+          }
+          description={
+            hasRecordMatches
+              ? "Bills, council files, topics, and source connectors that overlap your topics, jurisdictions, or keywords. We do not score alignment to your outcome; you judge each record on its own."
+              : "Coverage is expanding and missing means missing — but you are not at a dead end. Refine your keywords, watch the closest coverage we do have, and add your representatives. New records that match will surface here and in your digest."
+          }
         />
-        <div className="mt-6 grid gap-6 lg:grid-cols-2">
-          {matches.bills.length === 0 &&
-          matches.locals.length === 0 &&
-          matches.exploreItems.length === 0 &&
-          matches.topics.length === 0 ? (
-            <div className="rounded-lg border border-record-200 bg-paper-50 p-5 text-sm leading-6 text-ink-700">
-              No indexed records currently match this cause. Coverage is
-              expanding; missing means missing. Set your place to surface
-              federal reps for your state, refine your keywords, or come back
-              after the next ingestion run.
-            </div>
-          ) : null}
 
+        {!hasRecordMatches ? (
+          <div className="mt-6 grid gap-4">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Link
+                href={`/causes/${cause.id}/edit`}
+                className="group rounded-lg border border-record-200 bg-white p-4 shadow-line transition hover:border-civic-500"
+              >
+                <Pencil className="h-5 w-5 text-civic-700" aria-hidden="true" />
+                <h3 className="mt-3 text-sm font-semibold text-ink-950">
+                  Broaden your keywords
+                </h3>
+                <p className="mt-1 text-xs leading-5 text-ink-600">
+                  Add synonyms and plainer words. More keywords catch more
+                  records.
+                </p>
+                <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-civic-700 group-hover:gap-2">
+                  Refine cause →
+                </span>
+              </Link>
+              <Link
+                href="/explore"
+                className="group rounded-lg border border-record-200 bg-white p-4 shadow-line transition hover:border-civic-500"
+              >
+                <Compass className="h-5 w-5 text-civic-700" aria-hidden="true" />
+                <h3 className="mt-3 text-sm font-semibold text-ink-950">
+                  Ask the record directly
+                </h3>
+                <p className="mt-1 text-xs leading-5 text-ink-600">
+                  Search the full index by hand to find records to track.
+                </p>
+                <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-civic-700 group-hover:gap-2">
+                  Open search →
+                </span>
+              </Link>
+              <Link
+                href={`/causes/${cause.id}/digest`}
+                className="group rounded-lg border border-record-200 bg-white p-4 shadow-line transition hover:border-civic-500"
+              >
+                <Mail className="h-5 w-5 text-civic-700" aria-hidden="true" />
+                <h3 className="mt-3 text-sm font-semibold text-ink-950">
+                  Get alerted when it lands
+                </h3>
+                <p className="mt-1 text-xs leading-5 text-ink-600">
+                  Preview the digest. New matching records arrive here as
+                  ingestion runs.
+                </p>
+                <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-civic-700 group-hover:gap-2">
+                  Preview digest →
+                </span>
+              </Link>
+            </div>
+
+            {loose.length > 0 ? (
+              <article className="rounded-lg border border-record-200 bg-paper-50 p-5">
+                <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-civic-700">
+                  Closest coverage we have
+                </h3>
+                <p className="mt-1 text-xs leading-5 text-ink-600">
+                  Loose matches by word overlap — not exact matches. Skim these
+                  and add the relevant words to your cause to lock them in.
+                </p>
+                <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+                  {loose.map((m) => (
+                    <li key={m.href}>
+                      <Link
+                        href={m.href}
+                        className="block rounded-lg border border-record-200 bg-white p-4 shadow-line transition hover:border-civic-500"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-full bg-paper-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-700">
+                            {m.type === "bill"
+                              ? "Bill"
+                              : m.type === "local"
+                                ? "Local"
+                                : "Topic"}
+                          </span>
+                          {m.jurisdiction ? (
+                            <span className="text-[11px] text-ink-600">
+                              {m.jurisdiction}
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-2 text-sm font-semibold text-ink-950">
+                          {m.title}
+                        </p>
+                        <p className="mt-1 text-xs text-ink-600">
+                          Shared words: {m.sharedTerms.join(", ")}
+                        </p>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ) : null}
+
+            {!place ? (
+              <article className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-civic-100 bg-civic-50 p-5">
+                <div className="flex items-start gap-3">
+                  <MapPin
+                    className="mt-0.5 h-5 w-5 shrink-0 text-civic-700"
+                    aria-hidden="true"
+                  />
+                  <div>
+                    <p className="text-sm font-semibold text-ink-950">
+                      Set your ZIP to add your representatives.
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-ink-700">
+                      Use “Set your place” in the top bar. Your US House member
+                      and both senators attach to this cause automatically.
+                    </p>
+                  </div>
+                </div>
+              </article>
+            ) : null}
+          </div>
+        ) : null}
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
           {matches.bills.length > 0 ? (
             <article>
               <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-civic-700">
@@ -298,30 +450,29 @@ export default async function CausePage({ params }: CausePageProps) {
         </div>
       </section>
 
-      {matches.reps.length > 0 ? (
+      {repsToShow.length > 0 ? (
         <section className="border-y border-record-200 bg-white">
           <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
             <SectionHeader
-              eyebrow="Representatives in your watched jurisdictions"
-              title={`${matches.reps.length} federal reps to watch`}
-              description="These representatives serve the states you watch on this cause. The product does not score them on your outcome. Click a profile to see their record."
+              eyebrow={
+                place
+                  ? `Your representatives · ${place.city}, ${place.state}`
+                  : "Representatives in your watched jurisdictions"
+              }
+              title={`${repsToShow.length} federal reps to contact`}
+              description="These representatives serve your place. The product does not score them on your outcome — click a profile to see their record, then use Take action below to contact them on this cause."
             />
             <ul className="mt-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {matches.reps.slice(0, 30).map((m) => (
-                <li key={m.slug}>
+              {repsToShow.map((r) => (
+                <li key={r.slug}>
                   <Link
-                    href={`/federal/${m.slug}`}
+                    href={`/federal/${r.slug}`}
                     className="block rounded-md border border-record-200 bg-paper-50 p-3 transition hover:border-civic-500 hover:bg-white"
                   >
                     <p className="text-sm font-semibold text-ink-950">
-                      {m.rep.name}
+                      {r.name}
                     </p>
-                    <p className="mt-0.5 text-xs text-ink-600">
-                      {m.rep.type === "sen"
-                        ? `U.S. Senate · ${m.rep.state}`
-                        : `U.S. House · ${m.rep.state}-${m.rep.district}`}
-                      {m.rep.party ? ` · ${m.rep.party}` : ""}
-                    </p>
+                    <p className="mt-0.5 text-xs text-ink-600">{r.sub}</p>
                   </Link>
                 </li>
               ))}
@@ -348,9 +499,42 @@ export default async function CausePage({ params }: CausePageProps) {
             />
             <ol className="mt-6 grid gap-3">
               {activity.events.length === 0 ? (
-                <li className="rounded-lg border border-record-200 bg-paper-50 p-4 text-sm leading-6 text-ink-700">
-                  No timeline events yet for matched records. Activity surfaces
-                  here as ingestion runs.
+                <li className="rounded-lg border border-record-200 bg-paper-50 p-5">
+                  <p className="text-sm leading-6 text-ink-700">
+                    No timeline events yet — you just started. While coverage
+                    catches up, lock in the return loop so you hear about
+                    movement the moment it happens:
+                  </p>
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                    <Link
+                      href={`/causes/${cause.id}/digest`}
+                      className="flex items-center gap-2 rounded-md border border-record-200 bg-white p-3 text-sm font-semibold text-ink-900 transition hover:border-civic-500"
+                    >
+                      <Mail className="h-4 w-4 text-civic-700" aria-hidden="true" />
+                      Preview your digest
+                    </Link>
+                    <Link
+                      href="/calendar.ics"
+                      className="flex items-center gap-2 rounded-md border border-record-200 bg-white p-3 text-sm font-semibold text-ink-900 transition hover:border-civic-500"
+                    >
+                      <CalendarPlus className="h-4 w-4 text-civic-700" aria-hidden="true" />
+                      Add milestones to calendar
+                    </Link>
+                    <Link
+                      href={`/causes/${cause.id}/share`}
+                      className="flex items-center gap-2 rounded-md border border-record-200 bg-white p-3 text-sm font-semibold text-ink-900 transition hover:border-civic-500"
+                    >
+                      <Share2 className="h-4 w-4 text-civic-700" aria-hidden="true" />
+                      Share your cause
+                    </Link>
+                    <Link
+                      href={`/causes/${cause.id}/edit`}
+                      className="flex items-center gap-2 rounded-md border border-record-200 bg-white p-3 text-sm font-semibold text-ink-900 transition hover:border-civic-500"
+                    >
+                      <Pencil className="h-4 w-4 text-civic-700" aria-hidden="true" />
+                      Refine to catch more
+                    </Link>
+                  </div>
                 </li>
               ) : (
                 activity.events.map((event, idx) => (

@@ -1,4 +1,5 @@
 import { type NextRequest } from "next/server";
+import type { Cause } from "@/data/types";
 import { buildDigest, renderDigestHtml, renderDigestText } from "@/lib/digest";
 import { jsonError, jsonOk } from "@/lib/api";
 
@@ -11,6 +12,7 @@ type SendRequest = {
   to?: string;
   zip?: string;
   watchedIds?: string[];
+  causes?: Cause[];
   dryRun?: boolean;
 };
 
@@ -33,7 +35,11 @@ export async function POST(request: NextRequest) {
     return jsonError(400, "to_required", "Provide a recipient email in `to`.");
   }
 
-  const payload = buildDigest({ zip: body.zip, watchedIds: body.watchedIds });
+  const payload = buildDigest({
+    zip: body.zip,
+    watchedIds: body.watchedIds,
+    causes: Array.isArray(body.causes) ? body.causes : undefined,
+  });
   const html = renderDigestHtml(payload, BASE);
   const text = renderDigestText(payload, BASE);
 

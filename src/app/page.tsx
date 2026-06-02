@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { ArrowRight, Flame, Shield, ShieldCheck, Sparkles, Tent } from "lucide-react";
+import { ArrowRight, Flame, Shield, ShieldCheck, Tent } from "lucide-react";
 import type { ComponentType } from "react";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { AnswerEngine } from "@/components/AnswerEngine";
 import { DailyChangeDigest } from "@/components/DailyChangeDigest";
 import { FreshnessBadge } from "@/components/FreshnessBadge";
+import { HeroCauseMatch } from "@/components/HeroCauseMatch";
 import { MissingDataPanel } from "@/components/MissingDataPanel";
 import { PageShell } from "@/components/PageShell";
 import { SectionHeader } from "@/components/SectionHeader";
@@ -27,27 +28,12 @@ export default async function Home() {
               happening.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-ink-700">
-              Add a cause in your own words: safer streets, the wildfires
+              Name a cause in your own words: safer streets, the wildfires
               stopping, your rent not rising. The product matches indexed
               public records, votes, and reps. Nonpartisan. Source-anchored.
               We do not score alignment; you judge.
             </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link
-                href="/causes/new"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-ink-950 px-5 text-sm font-semibold text-white transition hover:bg-ink-800"
-              >
-                <Sparkles className="h-4 w-4" aria-hidden="true" />
-                Add a cause
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
-              <Link
-                href="/explore"
-                className="inline-flex h-12 items-center justify-center rounded-md border border-record-200 bg-white px-5 text-sm font-semibold text-ink-950 shadow-line transition hover:border-civic-500"
-              >
-                Ask the record instead
-              </Link>
-            </div>
+            <HeroCauseMatch />
             <div className="mt-6">
               <FreshnessBadge />
             </div>
