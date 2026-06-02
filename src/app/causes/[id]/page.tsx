@@ -114,11 +114,18 @@ export default async function CausePage({ params }: CausePageProps) {
               Share this cause anonymously
             </Link>
             <Link
-              href={`/causes/new?prefill=${cause.id}`}
+              href={`/causes/${cause.id}/edit`}
               className="inline-flex h-11 items-center gap-2 rounded-md border border-record-200 bg-white px-4 text-sm font-semibold text-ink-900 hover:border-civic-500"
             >
               <Pencil className="h-4 w-4" aria-hidden="true" />
               Refine
+            </Link>
+            <Link
+              href={`/causes/${cause.id}/actions`}
+              className="inline-flex h-11 items-center gap-2 rounded-md border border-record-200 bg-white px-4 text-sm font-semibold text-ink-900 hover:border-civic-500"
+            >
+              <MessageCircle className="h-4 w-4" aria-hidden="true" />
+              Action plan
             </Link>
             <CauseDeleteButton causeId={cause.id} />
           </div>
