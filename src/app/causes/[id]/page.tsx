@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import {
   ArrowRight,
   CalendarPlus,
+  CheckCircle2,
   Compass,
   Mail,
   MapPin,
@@ -175,6 +176,11 @@ export default async function CausePage({ params }: CausePageProps) {
               </div>
             </div>
           </div>
+          <p className="mt-5 inline-flex items-center gap-2 rounded-full border border-civic-100 bg-civic-50 px-3 py-1.5 text-xs font-semibold text-civic-700">
+            <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+            You&apos;re tracking this — below are the records behind it, your
+            representatives, and how to get alerts.
+          </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
               href={`/causes/${cause.id}/digest`}

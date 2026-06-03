@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Loader2, Search, Sparkles } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 
 type PreviewHit = { type: "bill" | "local" | "topic"; title: string; href: string };
 type PreviewState =
@@ -11,15 +11,16 @@ type PreviewState =
   | { status: "done"; count: number; top: PreviewHit[] }
   | { status: "error" };
 
-const QUICK_PICKS = [
-  "Affordable housing",
-  "Homelessness services",
-  "Wildfire prevention",
-  "Public safety",
-  "Public transit",
+const ISSUES: Array<{ label: string; emoji: string }> = [
+  { label: "Affordable housing", emoji: "🏠" },
+  { label: "Homelessness services", emoji: "🤝" },
+  { label: "Wildfire prevention", emoji: "🔥" },
+  { label: "Public safety", emoji: "🛡️" },
+  { label: "Public transit", emoji: "🚌" },
+  { label: "Clean elections", emoji: "🗳️" },
 ];
 
-function keywordsFromQuery(q: string): string {
+function keywordsFromQuery(q: string): string[] {
   return Array.from(
     new Set(
       q
@@ -27,24 +28,26 @@ function keywordsFromQuery(q: string): string {
         .split(/[^a-z0-9]+/)
         .filter((w) => w.length >= 3),
     ),
-  )
-    .slice(0, 12)
-    .join(", ");
+  ).slice(0, 12);
 }
 
 export function HeroCauseMatch() {
   const [query, setQuery] = useState("");
   const [preview, setPreview] = useState<PreviewState>({ status: "idle" });
   const [creating, setCreating] = useState(false);
+  const [creatingLabel, setCreatingLabel] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const trimmed = query.trim();
 
-  // One tap from "name a cause" straight to the created cause page (matches +
-  // your reps + activity) — no cold wizard form in between.
-  async function track() {
-    if (trimmed.length < 3 || creating) return;
+  // One tap → create the cause and land straight on its dashboard (records +
+  // your reps + alerts). Accepts an explicit issue label (from the tap grid)
+  // or falls back to the typed query.
+  async function track(explicit?: string) {
+    const value = (explicit ?? query).trim();
+    if (value.length < 3 || creating) return;
     setCreating(true);
+    setCreatingLabel(explicit ?? "__typed__");
     try {
       const existingRes = await fetch("/api/causes");
       const existingJson = (await existingRes.json()) as {
@@ -54,16 +57,13 @@ export function HeroCauseMatch() {
         ? existingJson.data!.causes
         : [];
       const id = `c-hero-${Date.now().toString(36)}`;
-      const keywords = keywordsFromQuery(trimmed)
-        .split(", ")
-        .filter(Boolean);
       const cause = {
         id,
-        title: trimmed.slice(0, 140),
-        outcome: trimmed.slice(0, 600),
+        title: value.slice(0, 140),
+        outcome: value.slice(0, 600),
         topics: [],
         jurisdictions: [],
-        watchTermsAny: keywords,
+        watchTermsAny: keywordsFromQuery(value),
         createdAt: new Date().toISOString(),
       };
       const causes = [...existing, cause];
@@ -74,6 +74,7 @@ export function HeroCauseMatch() {
       });
       if (!res.ok) {
         setCreating(false);
+        setCreatingLabel(null);
         return;
       }
       try {
@@ -81,11 +82,10 @@ export function HeroCauseMatch() {
       } catch {
         /* ignore */
       }
-      // Hard navigation: guarantees the just-set cookie is sent and the cause
-      // page renders server-side fresh. (router.push could leave you stuck.)
       window.location.assign(`/causes/${id}`);
     } catch {
       setCreating(false);
+      setCreatingLabel(null);
     }
   }
 
@@ -126,133 +126,120 @@ export function HeroCauseMatch() {
 
   const message = useMemo(() => {
     if (preview.status !== "done") return null;
-    if (preview.count === 0) {
-      return `No indexed records match "${trimmed}" yet.`;
-    }
-    return `${preview.count} indexed record${preview.count === 1 ? "" : "s"} already match "${trimmed}".`;
+    if (preview.count === 0) return `Nothing indexed for "${trimmed}" yet.`;
+    return `${preview.count} record${preview.count === 1 ? "" : "s"} ready for "${trimmed}".`;
   }, [preview, trimmed]);
 
   return (
     <div className="mt-7 max-w-2xl">
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          track();
-        }}
-        className="flex flex-col gap-2 sm:flex-row"
-      >
-        <label className="relative flex-1">
-          <span className="sr-only">Name a cause you care about</span>
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-500"
-            aria-hidden="true"
-          />
+      <p className="text-sm font-semibold text-ink-900">Tap what you care about:</p>
+      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {ISSUES.map((it) => (
+          <button
+            key={it.label}
+            type="button"
+            onClick={() => track(it.label)}
+            disabled={creating}
+            className="group flex items-center gap-3 rounded-lg border border-record-200 bg-white p-3 text-left shadow-line transition hover:border-civic-500 hover:bg-civic-50 disabled:opacity-60"
+          >
+            <span className="text-xl" aria-hidden="true">
+              {it.emoji}
+            </span>
+            <span className="text-sm font-semibold text-ink-950">
+              {it.label}
+            </span>
+            {creatingLabel === it.label ? (
+              <Loader2
+                className="ml-auto h-4 w-4 animate-spin text-civic-700"
+                aria-hidden="true"
+              />
+            ) : (
+              <ArrowRight
+                className="ml-auto h-4 w-4 text-civic-700 opacity-0 transition group-hover:opacity-100"
+                aria-hidden="true"
+              />
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* How it works — orient the first-timer */}
+      <ol className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-600">
+        <li className="font-semibold text-ink-800">1 · Pick an issue</li>
+        <li aria-hidden="true">→</li>
+        <li className="font-semibold text-ink-800">2 · See the records + your reps</li>
+        <li aria-hidden="true">→</li>
+        <li className="font-semibold text-ink-800">3 · Get alerts when it moves</li>
+      </ol>
+
+      {/* Secondary: describe your own (keeps the live match) */}
+      <div className="mt-5 border-t border-record-200 pt-4">
+        <label
+          htmlFor="hero-custom"
+          className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-600"
+        >
+          Or describe your own
+        </label>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            track();
+          }}
+          className="mt-2 flex flex-col gap-2 sm:flex-row"
+        >
           <input
+            id="hero-custom"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Name a cause: safer streets, wildfires stopping, rent staying affordable…"
-            className="h-12 w-full rounded-md border border-record-200 bg-white pl-9 pr-3 text-base text-ink-950 shadow-line outline-none focus:border-civic-500 sm:text-sm"
+            placeholder="e.g. safer streets, rent staying affordable…"
+            className="h-12 w-full flex-1 rounded-md border border-record-200 bg-white px-3 text-base text-ink-950 shadow-line outline-none focus:border-civic-500 sm:text-sm"
             maxLength={140}
             enterKeyHint="go"
             autoComplete="off"
             aria-describedby="hero-match-status"
           />
-        </label>
-        <button
-          type="submit"
-          disabled={trimmed.length < 3 || creating}
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-ink-950 px-5 text-sm font-semibold text-white transition hover:bg-ink-800 disabled:opacity-50"
-        >
-          {creating ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              Creating…
-            </>
-          ) : (
-            <>
-              <Sparkles className="h-4 w-4" aria-hidden="true" />
-              Track this cause
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </>
-          )}
-        </button>
-      </form>
-
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        <span className="text-xs text-ink-600">Try:</span>
-        {QUICK_PICKS.map((pick) => (
           <button
-            key={pick}
-            type="button"
-            onClick={() => setQuery(pick)}
-            className="rounded-full border border-record-200 bg-paper-50 px-2.5 py-1 text-xs font-semibold text-ink-700 transition hover:border-civic-500 hover:text-civic-700"
+            type="submit"
+            disabled={trimmed.length < 3 || creating}
+            className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-md bg-ink-950 px-5 text-sm font-semibold text-white transition hover:bg-ink-800 disabled:opacity-50"
           >
-            {pick}
+            {creating && creatingLabel === "__typed__" ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                Creating…
+              </>
+            ) : (
+              <>
+                Track it
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </>
+            )}
           </button>
-        ))}
+        </form>
+
+        <div
+          id="hero-match-status"
+          aria-live="polite"
+          className="mt-2 min-h-[1.25rem]"
+        >
+          {preview.status === "loading" ? (
+            <span className="inline-flex items-center gap-2 text-xs text-ink-600">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+              Checking…
+            </span>
+          ) : null}
+          {preview.status === "done" ? (
+            <p className="text-xs font-semibold text-civic-700">{message}</p>
+          ) : null}
+        </div>
       </div>
 
-      <div id="hero-match-status" aria-live="polite" className="mt-3 min-h-[1.5rem]">
-        {preview.status === "loading" ? (
-          <span className="inline-flex items-center gap-2 text-xs text-ink-600">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-            Checking the index…
-          </span>
-        ) : null}
-        {preview.status === "done" ? (
-          <div
-            className={`rounded-lg border p-3 ${
-              preview.count > 0
-                ? "border-civic-100 bg-civic-50"
-                : "border-record-200 bg-paper-50"
-            }`}
-          >
-            <p className="text-sm font-semibold text-ink-950">{message}</p>
-            {preview.count === 0 ? (
-              <p className="mt-1 text-xs leading-5 text-ink-600">
-                Coverage is expanding. Track it and you&apos;ll be first to know
-                when a record lands — your cause page also shows the closest
-                coverage we already have.
-              </p>
-            ) : null}
-            {preview.top.length > 0 ? (
-              <ul className="mt-2 grid gap-1">
-                {preview.top.map((hit) => (
-                  <li key={hit.href}>
-                    <Link
-                      href={hit.href}
-                      className="flex items-center gap-2 text-xs text-ink-700 hover:text-civic-700"
-                    >
-                      <span className="rounded bg-white px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-600">
-                        {hit.type}
-                      </span>
-                      <span className="truncate">{hit.title}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-            <button
-              type="button"
-              onClick={track}
-              disabled={creating}
-              className="mt-3 inline-flex h-10 items-center justify-center gap-1.5 rounded-md bg-ink-950 px-4 text-xs font-semibold text-white transition hover:bg-ink-800 disabled:opacity-60"
-            >
-              {preview.count > 0 ? "Track this cause" : "Track it anyway"}
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-            </button>
-          </div>
-        ) : null}
-      </div>
-
-      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-600">
-        <Link href="/causes/new" className="font-semibold text-ink-700 hover:text-civic-700">
-          Or pick from 12 starter causes →
+      <p className="mt-4 text-xs text-ink-500">
+        Nonpartisan · every claim links to the official record ·{" "}
+        <Link href="/explore" className="font-semibold text-ink-600 hover:text-civic-700">
+          or just ask the record →
         </Link>
-        <Link href="/explore" className="font-semibold text-ink-700 hover:text-civic-700">
-          Ask the record instead →
-        </Link>
-      </div>
+      </p>
     </div>
   );
 }

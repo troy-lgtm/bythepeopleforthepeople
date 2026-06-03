@@ -21,17 +21,14 @@ export default async function Home() {
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
             <p className="inline-flex rounded-full border border-record-200 bg-paper-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-civic-700">
-              Track what matters to you, with proof
+              See your government clearly
             </p>
             <h1 className="mt-5 text-balance text-4xl font-semibold tracking-tight text-ink-950 sm:text-5xl lg:text-6xl">
-              The causes you care about. The records that prove what is
-              happening.
+              What is your government doing about the things you care about?
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-ink-700">
-              Name a cause in your own words: safer streets, the wildfires
-              stopping, your rent not rising. The product matches indexed
-              public records, votes, and reps. Nonpartisan. Source-anchored.
-              We do not score alignment; you judge.
+              Tap an issue below. We show you the real bills, votes, and the
+              officials behind it — and tell you the moment something moves.
             </p>
             <HeroCauseMatch />
             <div className="mt-6">
