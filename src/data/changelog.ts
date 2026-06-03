@@ -7,6 +7,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-28",
+    kind: "coverage",
+    title: "Near me: your government at every level, from one ZIP",
+    body:
+      "/near-me is now a ladder of who represents you. Enter a ZIP (address-style autocomplete) and see your US senators + House member (live now from the bundled dataset), your state legislators (OpenStates, by your exact point), and city/county officials where covered — never invented; where no free roster exists, we say so and link the official source. Federal members show recent sponsored legislation via the Congress.gov API. Indexed bills and local files for your place sit alongside each level, plus your causes scoped to the area. Two new integrations (Congress.gov, OpenStates) read API keys and degrade gracefully — the page ships fully today on federal data and lights up state + votes the moment the keys are set. Also: the home hero now creates your cause in one tap and drops you straight on the cause page (matches + your reps + activity) instead of a cold form.",
+  },
+  {
     date: "2026-05-27",
     kind: "product",
     title: "Plural-tolerant matching + clearer no-match prompt",

@@ -33,18 +33,61 @@ function keywordsFromQuery(q: string): string {
     .join(", ");
 }
 
-function wizardHref(q: string): string {
-  const params = new URLSearchParams({ title: q.trim(), keywords: keywordsFromQuery(q) });
-  return `/causes/new?${params.toString()}`;
-}
-
 export function HeroCauseMatch() {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [preview, setPreview] = useState<PreviewState>({ status: "idle" });
+  const [creating, setCreating] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   const trimmed = query.trim();
+
+  // One tap from "name a cause" straight to the created cause page (matches +
+  // your reps + activity) — no cold wizard form in between.
+  async function track() {
+    if (trimmed.length < 3 || creating) return;
+    setCreating(true);
+    try {
+      const existingRes = await fetch("/api/causes");
+      const existingJson = (await existingRes.json()) as {
+        data?: { causes?: unknown[] };
+      };
+      const existing = Array.isArray(existingJson.data?.causes)
+        ? existingJson.data!.causes
+        : [];
+      const id = `c-hero-${Date.now().toString(36)}`;
+      const keywords = keywordsFromQuery(trimmed)
+        .split(", ")
+        .filter(Boolean);
+      const cause = {
+        id,
+        title: trimmed.slice(0, 140),
+        outcome: trimmed.slice(0, 600),
+        topics: [],
+        jurisdictions: [],
+        watchTermsAny: keywords,
+        createdAt: new Date().toISOString(),
+      };
+      const causes = [...existing, cause];
+      const res = await fetch("/api/causes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ causes }),
+      });
+      if (!res.ok) {
+        setCreating(false);
+        return;
+      }
+      try {
+        window.localStorage.setItem("btpftp-causes", JSON.stringify(causes));
+      } catch {
+        /* ignore */
+      }
+      router.push(`/causes/${id}`);
+    } catch {
+      setCreating(false);
+    }
+  }
 
   useEffect(() => {
     if (trimmed.length < 3) {
@@ -94,7 +137,7 @@ export function HeroCauseMatch() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (trimmed.length >= 3) router.push(wizardHref(trimmed));
+          track();
         }}
         className="flex flex-col gap-2 sm:flex-row"
       >
@@ -110,19 +153,28 @@ export function HeroCauseMatch() {
             placeholder="Name a cause: safer streets, wildfires stopping, rent staying affordable…"
             className="h-12 w-full rounded-md border border-record-200 bg-white pl-9 pr-3 text-base text-ink-950 shadow-line outline-none focus:border-civic-500 sm:text-sm"
             maxLength={140}
-            enterKeyHint="search"
+            enterKeyHint="go"
             autoComplete="off"
             aria-describedby="hero-match-status"
           />
         </label>
         <button
           type="submit"
-          disabled={trimmed.length < 3}
+          disabled={trimmed.length < 3 || creating}
           className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-ink-950 px-5 text-sm font-semibold text-white transition hover:bg-ink-800 disabled:opacity-50"
         >
-          <Sparkles className="h-4 w-4" aria-hidden="true" />
-          See my matches
-          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          {creating ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              Creating…
+            </>
+          ) : (
+            <>
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
+              Track this cause
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </>
+          )}
         </button>
       </form>
 
@@ -180,13 +232,15 @@ export function HeroCauseMatch() {
                 ))}
               </ul>
             ) : null}
-            <Link
-              href={wizardHref(trimmed)}
-              className="mt-3 inline-flex h-10 items-center justify-center gap-1.5 rounded-md bg-ink-950 px-4 text-xs font-semibold text-white transition hover:bg-ink-800"
+            <button
+              type="button"
+              onClick={track}
+              disabled={creating}
+              className="mt-3 inline-flex h-10 items-center justify-center gap-1.5 rounded-md bg-ink-950 px-4 text-xs font-semibold text-white transition hover:bg-ink-800 disabled:opacity-60"
             >
               {preview.count > 0 ? "Track this cause" : "Track it anyway"}
               <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-            </Link>
+            </button>
           </div>
         ) : null}
       </div>
