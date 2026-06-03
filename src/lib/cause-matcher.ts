@@ -34,13 +34,27 @@ export type CauseMatches = {
   }>;
 };
 
+/**
+ * Light singularizer so natural plurals match singular record text:
+ * "wildfires" → "wildfire", "policies" → "policy", "schools" → "school".
+ * The reverse (singular query, plural record) already works via substring.
+ */
+function singularize(word: string): string {
+  if (word.length <= 3) return word;
+  if (/ies$/.test(word)) return `${word.slice(0, -3)}y`;
+  if (/ss$/.test(word)) return word;
+  if (/s$/.test(word)) return word.slice(0, -1);
+  return word;
+}
+
 function termHits(haystack: string, terms: string[]): string[] {
   const hits: string[] = [];
   const lower = haystack.toLowerCase();
   for (const term of terms) {
     const t = term.toLowerCase().trim();
     if (!t) continue;
-    if (lower.includes(t)) hits.push(term);
+    const s = singularize(t);
+    if (lower.includes(t) || (s !== t && lower.includes(s))) hits.push(term);
   }
   return hits;
 }
@@ -261,7 +275,9 @@ export function looseMatches(cause: Cause, limit = 6): LooseMatch[] {
   const scored: Array<LooseMatch & { score: number }> = [];
   const scan = (haystack: string, base: Omit<LooseMatch, "sharedTerms">) => {
     const lower = haystack.toLowerCase();
-    const shared = tokens.filter((t) => lower.includes(t));
+    const shared = tokens.filter(
+      (t) => lower.includes(t) || lower.includes(singularize(t)),
+    );
     if (shared.length > 0) {
       scored.push({ ...base, sharedTerms: shared.slice(0, 4), score: shared.length });
     }

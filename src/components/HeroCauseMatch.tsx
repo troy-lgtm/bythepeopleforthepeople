@@ -84,7 +84,7 @@ export function HeroCauseMatch() {
   const message = useMemo(() => {
     if (preview.status !== "done") return null;
     if (preview.count === 0) {
-      return "No exact matches yet — create it and we'll surface records as they land.";
+      return `No indexed records match "${trimmed}" yet.`;
     }
     return `${preview.count} indexed record${preview.count === 1 ? "" : "s"} already match "${trimmed}".`;
   }, [preview, trimmed]);
@@ -148,8 +148,21 @@ export function HeroCauseMatch() {
           </span>
         ) : null}
         {preview.status === "done" ? (
-          <div className="rounded-lg border border-record-200 bg-paper-50 p-3">
+          <div
+            className={`rounded-lg border p-3 ${
+              preview.count > 0
+                ? "border-civic-100 bg-civic-50"
+                : "border-record-200 bg-paper-50"
+            }`}
+          >
             <p className="text-sm font-semibold text-ink-950">{message}</p>
+            {preview.count === 0 ? (
+              <p className="mt-1 text-xs leading-5 text-ink-600">
+                Coverage is expanding. Track it and you&apos;ll be first to know
+                when a record lands — your cause page also shows the closest
+                coverage we already have.
+              </p>
+            ) : null}
             {preview.top.length > 0 ? (
               <ul className="mt-2 grid gap-1">
                 {preview.top.map((hit) => (
@@ -169,9 +182,9 @@ export function HeroCauseMatch() {
             ) : null}
             <Link
               href={wizardHref(trimmed)}
-              className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-civic-700 hover:gap-2"
+              className="mt-3 inline-flex h-10 items-center justify-center gap-1.5 rounded-md bg-ink-950 px-4 text-xs font-semibold text-white transition hover:bg-ink-800"
             >
-              {preview.count > 0 ? "Track this cause and see them all" : "Create this cause"}
+              {preview.count > 0 ? "Track this cause" : "Track it anyway"}
               <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
           </div>

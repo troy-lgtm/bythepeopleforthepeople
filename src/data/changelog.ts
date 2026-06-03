@@ -7,6 +7,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-27",
+    kind: "product",
+    title: "Plural-tolerant matching + clearer no-match prompt",
+    body:
+      "The live hero match and the cause matcher now tolerate plurals — typing “wildfires”, “schools”, or “streets” matches records that say “wildfire”, “school”, “street” (light singularization; the reverse already worked). When a query genuinely has no indexed records yet, the hero no longer reads as a dead end: it states plainly that nothing matches yet, explains coverage is expanding, and offers a one-tap “Track it anyway” so you are first to know when a record lands. No fabricated matches — a true zero stays an honest zero.",
+  },
+  {
     date: "2026-05-26",
     kind: "product",
     title: "Mobile app-feel: bottom nav, install nudge, native share, ergonomics",
