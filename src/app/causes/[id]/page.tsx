@@ -187,7 +187,7 @@ export default async function CausePage({ params }: CausePageProps) {
               className="inline-flex h-11 items-center gap-2 rounded-md bg-ink-950 px-4 text-sm font-semibold text-white hover:bg-ink-800"
             >
               <Mail className="h-4 w-4" aria-hidden="true" />
-              Cause digest preview
+              Get email alerts
             </Link>
             <Link
               href={`/causes/${cause.id}/share`}
@@ -210,7 +210,9 @@ export default async function CausePage({ params }: CausePageProps) {
               <MessageCircle className="h-4 w-4" aria-hidden="true" />
               Action plan
             </Link>
-            <CauseDeleteButton causeId={cause.id} />
+            <div className="ml-auto">
+              <CauseDeleteButton causeId={cause.id} />
+            </div>
           </div>
         </div>
       </section>
@@ -225,7 +227,7 @@ export default async function CausePage({ params }: CausePageProps) {
           }
           description={
             hasRecordMatches
-              ? "Bills, council files, topics, and source connectors that overlap your topics, jurisdictions, or keywords. We do not score alignment to your outcome; you judge each record on its own."
+              ? "The bills, files, and topics connected to this cause. We don't tell you who's right — each one links to its official source for you to judge."
               : "Coverage is expanding and missing means missing — but you are not at a dead end. Refine your keywords, watch the closest coverage we do have, and add your representatives. New records that match will surface here and in your digest."
           }
         />

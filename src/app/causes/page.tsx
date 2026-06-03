@@ -9,7 +9,7 @@ import { readCauses } from "@/lib/causes";
 export const metadata: Metadata = {
   title: "Your causes",
   description:
-    "Track the causes you care about. The product matches indexed records to your cause; the user judges, the product never scores.",
+    "Track the issues you care about. See the bills, votes, and officials behind each — and get alerts when they move.",
   alternates: { canonical: "/causes" },
 };
 
@@ -23,7 +23,7 @@ export default async function CausesIndexPage() {
           <SectionHeader
             eyebrow="Causes important to you"
             title="Track what actually matters to you, with proof."
-            description="A cause is your own goal in your own words. The product matches indexed records, votes, and reps to that cause. We do not score alignment. You judge."
+            description="Pick something you care about. We surface the bills, votes, and officials behind it — and alert you when it moves. Nonpartisan; you decide what to make of each record."
           />
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
