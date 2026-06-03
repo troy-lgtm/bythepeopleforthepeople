@@ -7,6 +7,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-29",
+    kind: "product",
+    title: "Home hero rebuilt for first-touch clarity",
+    body:
+      "A first-time visitor now knows exactly what to do. The hero leads with a plain question — 'What is your government doing about the things you care about?' — and a single obvious action: tap one of six concrete issues. One tap creates that cause and lands you on its dashboard, which opens with 'You're tracking this — below are the records behind it, your representatives, and how to get alerts.' A 3-step how-it-works (pick → see records + reps → get alerts) orients the rest; free-text 'describe your own' (with the live match count) is demoted to secondary; product jargon (indexed, source-anchored, alignment scoring) moved out of the headline to a quiet trust line. Replaces the previous choice-overloaded hero that left users unsure what to do.",
+  },
+  {
     date: "2026-05-28",
     kind: "coverage",
     title: "Near me: your government at every level, from one ZIP",
