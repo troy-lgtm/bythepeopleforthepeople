@@ -199,7 +199,7 @@ export function UniversalSearch({ className }: { className?: string }) {
         )}
       >
         <Search className="h-4 w-4 text-ink-600" aria-hidden="true" />
-        <span className="hidden sm:inline">Search records, reps, places</span>
+        <span className="hidden sm:inline">Search</span>
         <span className="hidden items-center gap-0.5 rounded border border-record-200 bg-paper-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-ink-600 sm:inline-flex">
           ⌘K
         </span>

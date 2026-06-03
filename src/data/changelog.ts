@@ -7,6 +7,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-30",
+    kind: "product",
+    title: "Polish v1: tighter home, subscribe-first digest, balanced desktop, one voice",
+    body:
+      "A self-audit pass on flow and craft. Home cut from nine stacked sections to five — removed the duplicate issue list and two redundant activity feeds, so after the hero the page reads as intentional. The /digest page now leads with the subscribe form and a live sample of the actual email; operator stats moved to a secondary 'under the hood' section. Desktop hero is a balanced two-column layout (it was wasting the right half). Voice unified: causes, digest, and cause-detail copy dropped the internal jargon ('indexed records', 'score alignment') for the plain hero voice. Header fixed: full brand name no longer truncates, 'Near me' no longer wraps, search trigger compacted. Tapping a hero issue now maps to a real starter cause, so it inherits curated topics and a proper outcome (richer matches, no title-equals-outcome duplication). Cause page: clearer primary action and the destructive Delete demoted out of the primary row.",
+  },
+  {
     date: "2026-05-29",
     kind: "product",
     title: "Home hero rebuilt for first-touch clarity",
