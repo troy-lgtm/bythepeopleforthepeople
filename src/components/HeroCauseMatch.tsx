@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Loader2, Search, Sparkles } from "lucide-react";
 
@@ -34,7 +33,6 @@ function keywordsFromQuery(q: string): string {
 }
 
 export function HeroCauseMatch() {
-  const router = useRouter();
   const [query, setQuery] = useState("");
   const [preview, setPreview] = useState<PreviewState>({ status: "idle" });
   const [creating, setCreating] = useState(false);
@@ -83,7 +81,9 @@ export function HeroCauseMatch() {
       } catch {
         /* ignore */
       }
-      router.push(`/causes/${id}`);
+      // Hard navigation: guarantees the just-set cookie is sent and the cause
+      // page renders server-side fresh. (router.push could leave you stuck.)
+      window.location.assign(`/causes/${id}`);
     } catch {
       setCreating(false);
     }
