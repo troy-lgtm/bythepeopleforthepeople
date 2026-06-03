@@ -7,6 +7,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-25",
+    kind: "product",
+    title: "Email subscriptions + automated digest delivery",
+    body:
+      "The return loop is now automatic. Subscribe by email on /digest with a chosen cadence; your ZIP and causes (if set) personalize what you get. Double opt-in — nothing sends until you click the confirmation link — and one-click unsubscribe (RFC 8058 List-Unsubscribe) in every message. A daily Vercel Cron sends weekly subscribers on Mondays and daily subscribers each day, with same-day dedupe so a re-run never double-sends. Subscribers live in a managed Redis store (no email in cookies, no public exposure); the cron refuses to run unless CRON_SECRET is set, so bulk mail is never an open endpoint. Privacy policy updated to cover exactly what a subscription stores and how unsubscribe erases it.",
+  },
+  {
     date: "2026-05-24",
     kind: "product",
     title: "Funnel v1: live hero matching, no more dead ends, real return loop",

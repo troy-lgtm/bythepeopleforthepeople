@@ -105,7 +105,11 @@ export function buildDigest(opts?: {
   };
 }
 
-export function renderDigestText(d: DigestPayload, baseUrl: string): string {
+export function renderDigestText(
+  d: DigestPayload,
+  baseUrl: string,
+  opts?: { unsubscribeUrl?: string },
+): string {
   const lines: string[] = [];
   lines.push("By The People, For The People");
   lines.push(`Generated ${new Date(d.generatedAt).toUTCString()}`);
@@ -173,10 +177,22 @@ export function renderDigestText(d: DigestPayload, baseUrl: string): string {
     lines.push("");
   });
   lines.push(d.footer);
+  lines.push("");
+  lines.push("---");
+  lines.push("By The People, For The People — nonpartisan, source-anchored.");
+  const mailing = process.env.DIGEST_MAILING_ADDRESS;
+  if (mailing) lines.push(mailing);
+  if (opts?.unsubscribeUrl) {
+    lines.push(`Unsubscribe: ${opts.unsubscribeUrl}`);
+  }
   return lines.join("\n");
 }
 
-export function renderDigestHtml(d: DigestPayload, baseUrl: string): string {
+export function renderDigestHtml(
+  d: DigestPayload,
+  baseUrl: string,
+  opts?: { unsubscribeUrl?: string },
+): string {
   const change = (c: (typeof d.recentChanges)[number]) => {
     const sources = getSourcesByIds(c.sourceIds);
     return `
@@ -256,6 +272,8 @@ export function renderDigestHtml(d: DigestPayload, baseUrl: string): string {
     <ul style="margin:0;padding-left:18px;">${d.missing.map(missing).join("")}</ul>
 
     <p style="margin:24px 0 0 0;font-size:11px;color:#40516a;">${escapeHtml(d.footer)}</p>
+    <hr style="border:none;border-top:1px solid #eceef4;margin:18px 0 12px 0;">
+    <p style="margin:0;font-size:11px;color:#8190a6;">By The People, For The People — nonpartisan, source-anchored.${process.env.DIGEST_MAILING_ADDRESS ? `<br>${escapeHtml(process.env.DIGEST_MAILING_ADDRESS)}` : ""}${opts?.unsubscribeUrl ? `<br><a href="${opts.unsubscribeUrl}" style="color:#8190a6;text-decoration:underline;">Unsubscribe</a>` : ""}</p>
   </div>
 </body></html>`;
 }
