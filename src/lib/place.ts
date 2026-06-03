@@ -33,6 +33,32 @@ export function knownZips(): string[] {
   return Object.keys(zipMap).filter((k) => !k.startsWith("_"));
 }
 
+export type ZipSuggestion = { zip: string; city: string; state: string };
+
+/**
+ * Address-style autocomplete over the static metro table. Matches a ZIP prefix
+ * or a city/state substring. Long-tail ZIPs not in the table still resolve on
+ * submit via the Census fallback.
+ */
+export function searchZips(q: string, limit = 8): ZipSuggestion[] {
+  const query = q.trim().toLowerCase();
+  if (query.length < 2) return [];
+  const out: ZipSuggestion[] = [];
+  const seen = new Set<string>();
+  for (const [zip, entry] of Object.entries(zipMap)) {
+    if (zip.startsWith("_") || !isZipEntry(entry)) continue;
+    const label = `${entry.city}, ${entry.state}`.toLowerCase();
+    if (zip.startsWith(query) || label.includes(query)) {
+      const dedupe = `${entry.city}-${entry.state}-${zip}`;
+      if (seen.has(dedupe)) continue;
+      seen.add(dedupe);
+      out.push({ zip, city: entry.city, state: entry.state });
+      if (out.length >= limit) break;
+    }
+  }
+  return out;
+}
+
 export async function readPlace(): Promise<Place | null> {
   const store = await cookies();
   const raw = store.get(PLACE_COOKIE)?.value;
