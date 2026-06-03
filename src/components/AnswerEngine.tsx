@@ -90,9 +90,10 @@ export function AnswerEngine({
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              className="h-12 w-full rounded-md border border-record-200 bg-paper-50 pl-9 pr-3 text-sm font-medium text-ink-950 outline-none transition placeholder:text-ink-600 focus:border-civic-500 focus:bg-white"
+              className="h-12 w-full rounded-md border border-record-200 bg-paper-50 pl-9 pr-3 text-base font-medium text-ink-950 outline-none transition placeholder:text-ink-600 focus:border-civic-500 focus:bg-white sm:text-sm"
               placeholder="Try: who voted no, what got incorporated, what happens next"
               aria-label="Search record questions"
+              enterKeyHint="search"
             />
           </label>
 

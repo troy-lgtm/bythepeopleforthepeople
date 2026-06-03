@@ -131,10 +131,10 @@ export function PlacePicker({
               <button
                 type="button"
                 onClick={close}
-                className="rounded-md p-1 text-ink-600 hover:bg-paper-50 hover:text-ink-900"
+                className="-mr-2 -mt-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-ink-600 hover:bg-paper-50 hover:text-ink-900"
                 aria-label="Close"
               >
-                <X className="h-4 w-4" aria-hidden="true" />
+                <X className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
 
@@ -156,8 +156,10 @@ export function PlacePicker({
                   inputMode="numeric"
                   pattern="\d{5}"
                   maxLength={5}
+                  autoComplete="postal-code"
+                  enterKeyHint="go"
                   placeholder="90012"
-                  className="h-11 rounded-md border border-record-200 bg-paper-50 px-3 text-sm font-medium text-ink-950 outline-none transition focus:border-civic-500 focus:bg-white"
+                  className="h-12 rounded-md border border-record-200 bg-paper-50 px-3 text-base font-medium text-ink-950 outline-none transition focus:border-civic-500 focus:bg-white sm:h-11 sm:text-sm"
                 />
               </label>
               {error ? (
@@ -184,7 +186,7 @@ export function PlacePicker({
                 <button
                   type="submit"
                   disabled={pending}
-                  className="inline-flex h-10 items-center justify-center rounded-md bg-ink-950 px-4 text-sm font-semibold text-white hover:bg-ink-800 disabled:opacity-60"
+                  className="inline-flex h-11 items-center justify-center rounded-md bg-ink-950 px-4 text-sm font-semibold text-white hover:bg-ink-800 disabled:opacity-60"
                 >
                   {pending ? "Saving..." : "Save place"}
                 </button>
@@ -192,7 +194,7 @@ export function PlacePicker({
                   <button
                     type="button"
                     onClick={clearPlace}
-                    className="inline-flex h-10 items-center justify-center rounded-md border border-record-200 bg-white px-4 text-sm font-semibold text-ink-800 hover:border-civic-500"
+                    className="inline-flex h-11 items-center justify-center rounded-md border border-record-200 bg-white px-4 text-sm font-semibold text-ink-800 hover:border-civic-500"
                   >
                     Clear
                   </button>

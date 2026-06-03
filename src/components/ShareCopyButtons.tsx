@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Check, Copy, Send } from "lucide-react";
+import { ArrowRight, Check, Copy, Send, Share2 } from "lucide-react";
 
 type ShareCopyButtonsProps = {
   shareUrl: string;
@@ -20,6 +20,19 @@ export function ShareCopyButtons({
   const [copyState, setCopyState] = useState<{
     [k: string]: "idle" | "copied" | "error";
   }>({});
+  const [canShare, setCanShare] = useState(false);
+
+  useEffect(() => {
+    setCanShare(typeof navigator !== "undefined" && !!navigator.share);
+  }, []);
+
+  async function nativeShare() {
+    try {
+      await navigator.share({ text: tweetText, url: shareUrl });
+    } catch {
+      /* user cancelled or unsupported */
+    }
+  }
 
   async function copy(key: string, value: string) {
     try {
@@ -39,6 +52,16 @@ export function ShareCopyButtons({
 
   return (
     <div className="mt-5 grid gap-3">
+      {canShare ? (
+        <button
+          type="button"
+          onClick={nativeShare}
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-civic-600 px-4 text-sm font-semibold text-white transition hover:bg-civic-700"
+        >
+          <Share2 className="h-4 w-4" aria-hidden="true" />
+          Share…
+        </button>
+      ) : null}
       <CopyRow
         label="Share URL"
         value={shareUrl}
@@ -104,7 +127,7 @@ function CopyRow({
           readOnly
           value={value}
           onFocus={(e) => e.currentTarget.select()}
-          className="h-11 flex-1 min-w-0 rounded-md border border-record-200 bg-paper-50 px-3 font-mono text-xs text-ink-800 outline-none focus:border-civic-500 focus:bg-white"
+          className="h-11 flex-1 min-w-0 rounded-md border border-record-200 bg-paper-50 px-3 font-mono text-base text-ink-800 outline-none focus:border-civic-500 focus:bg-white sm:text-xs"
         />
         <button
           type="button"

@@ -33,7 +33,7 @@ export function VoteTable({ votes }: VoteTableProps) {
               </h3>
               <p className="mt-1 text-sm text-ink-600">{vote.chamberOrBody}</p>
             </div>
-            <div className="grid grid-cols-4 gap-2 text-center">
+            <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
               <VoteCount label="Yes" value={vote.yes} />
               <VoteCount label="No" value={vote.no} />
               <VoteCount label="Abstain" value={vote.abstain} />

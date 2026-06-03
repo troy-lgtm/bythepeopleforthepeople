@@ -79,10 +79,10 @@ export function ShareRecordButtons({
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-md p-1 text-ink-600 hover:bg-paper-50"
+                className="-mr-2 -mt-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-ink-600 hover:bg-paper-50"
                 aria-label="Close"
               >
-                <X className="h-4 w-4" aria-hidden="true" />
+                <X className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
             <ul className="max-h-[60vh] divide-y divide-record-200 overflow-y-auto">

@@ -111,10 +111,10 @@ export function ReportCorrection({
               <button
                 type="button"
                 onClick={close}
-                className="rounded-md p-1 text-ink-600 hover:bg-paper-50 hover:text-ink-900"
+                className="-mr-2 -mt-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-ink-600 hover:bg-paper-50 hover:text-ink-900"
                 aria-label="Close"
               >
-                <X className="h-4 w-4" aria-hidden="true" />
+                <X className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
 
@@ -165,7 +165,7 @@ export function ReportCorrection({
                     value={description}
                     onChange={(event) => setDescription(event.target.value)}
                     placeholder="The vote count shows 21 ayes but the LegInfo page shows 22 as of today. Source: https://..."
-                    className="rounded-md border border-record-200 bg-paper-50 p-3 text-sm leading-6 text-ink-950 outline-none transition focus:border-civic-500 focus:bg-white"
+                    className="rounded-md border border-record-200 bg-paper-50 p-3 text-base leading-6 text-ink-950 outline-none transition focus:border-civic-500 focus:bg-white sm:text-sm"
                     required
                   />
                 </div>
@@ -182,7 +182,9 @@ export function ReportCorrection({
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     placeholder="So we can notify you when the fix lands"
-                    className="h-11 rounded-md border border-record-200 bg-paper-50 px-3 text-sm text-ink-950 outline-none transition focus:border-civic-500 focus:bg-white"
+                    inputMode="email"
+                    autoComplete="email"
+                    className="h-12 rounded-md border border-record-200 bg-paper-50 px-3 text-base text-ink-950 outline-none transition focus:border-civic-500 focus:bg-white sm:h-11 sm:text-sm"
                   />
                 </div>
                 {errorMessage ? (

@@ -175,9 +175,10 @@ export function ExploreWorkspace() {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            className="h-12 w-full rounded-md border border-record-200 bg-paper-50 pl-9 pr-3 text-sm text-ink-950 outline-none transition placeholder:text-ink-600 focus:border-civic-500 focus:bg-white"
+            className="h-12 w-full rounded-md border border-record-200 bg-paper-50 pl-9 pr-3 text-base text-ink-950 outline-none transition placeholder:text-ink-600 focus:border-civic-500 focus:bg-white sm:text-sm"
             placeholder="who voted no, upcoming vote, Downtown LA"
             aria-label="Search public records"
+            enterKeyHint="search"
           />
         </label>
 
@@ -327,7 +328,7 @@ function SelectControl<T extends string>({
       <select
         value={value}
         onChange={(event) => onChange(event.target.value as T)}
-        className="h-11 rounded-md border border-record-200 bg-paper-50 px-3 text-sm text-ink-950 outline-none transition focus:border-civic-500 focus:bg-white"
+        className="h-11 rounded-md border border-record-200 bg-paper-50 px-3 text-base text-ink-950 outline-none transition focus:border-civic-500 focus:bg-white sm:text-sm"
       >
         {options.map((option) => (
           <option key={option} value={option}>

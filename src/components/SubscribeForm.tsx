@@ -96,7 +96,10 @@ export function SubscribeForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
-            className="h-11 rounded-md border border-record-200 bg-paper-50 px-3 text-sm text-ink-950 outline-none focus:border-civic-500 focus:bg-white"
+            inputMode="email"
+            autoComplete="email"
+            enterKeyHint="done"
+            className="h-12 rounded-md border border-record-200 bg-paper-50 px-3 text-base text-ink-950 outline-none focus:border-civic-500 focus:bg-white sm:h-11 sm:text-sm"
           />
         </label>
 
