@@ -41,6 +41,15 @@ export default function PrivacyPage() {
             with an optional email, we store the email server-side only to
             notify you when the fix lands. Never sold, never shared.
           </li>
+          <li>
+            <strong>Email subscriptions (opt-in):</strong> if you subscribe to
+            the digest, we store your email, your chosen cadence, and a snapshot
+            of your ZIP and causes so the digest can be personalized. Stored in
+            a managed Redis store, used only to send the digest you asked for.
+            Double opt-in: nothing is sent until you click the confirmation
+            link. One-click unsubscribe in every email deletes all of it. Never
+            sold, never shared.
+          </li>
         </ul>
 
         <h2 className="mt-8 text-lg font-semibold text-ink-950">What we do not store</h2>
@@ -73,12 +82,14 @@ export default function PrivacyPage() {
           Email <a href="mailto:privacy@bythepeopleforthepeople.com" className="text-civic-700 underline">privacy@bythepeopleforthepeople.com</a> with any
           request to delete a correction submission you sent, or to ask what
           we know about you. Default position: we know your ZIP if you set it
-          (visible to you in your own browser) and an optional email if you
-          gave one on a correction submission.
+          (visible to you in your own browser), an optional email if you gave
+          one on a correction submission, and your email plus cadence and a
+          ZIP/causes snapshot if you subscribed to the digest. Unsubscribe from
+          any digest email to erase the subscription record entirely.
         </p>
 
         <p className="mt-8 text-xs text-ink-600">
-          Last updated 2026-05-21. Material changes will be logged in the{" "}
+          Last updated 2026-06-02. Material changes will be logged in the{" "}
           <a href="/corrections" className="text-civic-700 underline">
             corrections log
           </a>

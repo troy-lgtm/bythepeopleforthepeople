@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Mail, Send, ShieldCheck } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { SectionHeader } from "@/components/SectionHeader";
+import { SubscribeForm } from "@/components/SubscribeForm";
 import { readCauses } from "@/lib/causes";
 import { buildDigest, renderDigestHtml } from "@/lib/digest";
 import { readPlace } from "@/lib/place";
@@ -45,6 +46,7 @@ export default async function DigestPage() {
 
       <section className="mx-auto grid max-w-7xl gap-6 px-4 py-12 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] lg:px-8">
         <div className="grid content-start gap-4">
+          <SubscribeForm />
           <section className="rounded-lg border border-record-200 bg-white p-5 shadow-line">
             <div className="flex items-start gap-3">
               <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-civic-50 text-civic-700">
