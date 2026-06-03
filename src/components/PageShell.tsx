@@ -1,5 +1,7 @@
+import { BottomNav } from "./BottomNav";
 import { Footer } from "./Footer";
 import { Header } from "./Header";
+import { InstallPrompt } from "./InstallPrompt";
 
 type PageShellProps = {
   children: React.ReactNode;
@@ -17,6 +19,14 @@ export function PageShell({ children }: PageShellProps) {
       <Header />
       <main id="main">{children}</main>
       <Footer />
+      {/* Spacer so the fixed bottom nav never covers footer content on mobile */}
+      <div
+        aria-hidden="true"
+        className="md:hidden"
+        style={{ height: "calc(3.5rem + env(safe-area-inset-bottom))" }}
+      />
+      <BottomNav />
+      <InstallPrompt />
     </div>
   );
 }

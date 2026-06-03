@@ -140,6 +140,13 @@ export function UniversalSearch({ className }: { className?: string }) {
     return () => document.removeEventListener("keydown", onKey);
   }, [open, close]);
 
+  // Open from the mobile bottom-nav Search tab.
+  useEffect(() => {
+    const openHandler = () => setOpen(true);
+    window.addEventListener("btp:open-search", openHandler);
+    return () => window.removeEventListener("btp:open-search", openHandler);
+  }, []);
+
   // Focus input when opened
   useEffect(() => {
     if (open) requestAnimationFrame(() => inputRef.current?.focus());
@@ -216,6 +223,9 @@ export function UniversalSearch({ className }: { className?: string }) {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={onListKey}
+                inputMode="search"
+                enterKeyHint="search"
+                autoComplete="off"
                 placeholder="Search records, representatives, places, topics..."
                 className="h-10 flex-1 bg-transparent text-base text-ink-950 outline-none placeholder:text-ink-600"
                 aria-label="Universal search"
@@ -231,9 +241,9 @@ export function UniversalSearch({ className }: { className?: string }) {
                 type="button"
                 onClick={close}
                 aria-label="Close search"
-                className="rounded-md p-1 text-ink-600 hover:bg-paper-50 hover:text-ink-900"
+                className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-ink-600 hover:bg-paper-50 hover:text-ink-900"
               >
-                <X className="h-4 w-4" aria-hidden="true" />
+                <X className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
 

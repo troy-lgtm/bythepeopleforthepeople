@@ -108,8 +108,10 @@ export function HeroCauseMatch() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Name a cause: safer streets, wildfires stopping, rent staying affordable…"
-            className="h-12 w-full rounded-md border border-record-200 bg-white pl-9 pr-3 text-sm text-ink-950 shadow-line outline-none focus:border-civic-500"
+            className="h-12 w-full rounded-md border border-record-200 bg-white pl-9 pr-3 text-base text-ink-950 shadow-line outline-none focus:border-civic-500 sm:text-sm"
             maxLength={140}
+            enterKeyHint="search"
+            autoComplete="off"
             aria-describedby="hero-match-status"
           />
         </label>

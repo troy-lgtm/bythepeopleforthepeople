@@ -97,7 +97,7 @@ function CopyRow({
           readOnly
           value={value}
           onFocus={(e) => e.currentTarget.select()}
-          className="h-11 min-w-0 flex-1 rounded-md border border-record-200 bg-paper-50 px-3 font-mono text-xs text-ink-800 outline-none focus:border-civic-500 focus:bg-white"
+          className="h-11 min-w-0 flex-1 rounded-md border border-record-200 bg-paper-50 px-3 font-mono text-base text-ink-800 outline-none focus:border-civic-500 focus:bg-white sm:text-xs"
         />
         <button
           type="button"

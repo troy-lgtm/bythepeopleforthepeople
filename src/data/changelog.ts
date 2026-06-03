@@ -7,6 +7,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-26",
+    kind: "product",
+    title: "Mobile app-feel: bottom nav, install nudge, native share, ergonomics",
+    body:
+      "Made the phone experience feel like an app, not a website — without dark patterns. New bottom thumb-nav (Home, Causes, Search, Reps) on mobile; the Search tab opens the same command palette. Add-to-Home-Screen nudge (Android install prompt + an iOS Safari hint), dismissible and remembered. Native share sheet (navigator.share) on share surfaces so you get AirDrop/Messages/WhatsApp, with the copy + Tweet/Bluesky fallback intact. Ergonomic pass: every input is now 16px on mobile (kills the iOS focus-zoom jolt) while staying compact on desktop; tap targets bumped to ~44px (modal close buttons, the keyword-remove control, place buttons); viewport-fit=cover for notch/safe-area; inputmode/enterKeyHint/autocomplete on ZIP, email, and search fields. Layout fixes: vote-count grid no longer crushes to four columns on small screens, the digest email preview is capped to 70vh on phones, and long RSS/share URLs no longer trigger zoom.",
+  },
+  {
     date: "2026-05-25",
     kind: "product",
     title: "Email subscriptions + automated digest delivery",

@@ -140,7 +140,7 @@ export default async function DigestPage() {
             srcDoc={html}
             title="Digest preview"
             sandbox="allow-popups allow-popups-to-escape-sandbox"
-            className="h-[1100px] w-full rounded-md border border-record-200 bg-white"
+            className="h-[70vh] w-full rounded-md border border-record-200 bg-white sm:h-[1100px]"
           />
         </article>
       </section>
