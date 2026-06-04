@@ -209,6 +209,7 @@ export function UniversalSearch({ className }: { className?: string }) {
         ref={triggerRef}
         type="button"
         onClick={() => setOpen(true)}
+        aria-label="Search"
         aria-haspopup="dialog"
         aria-expanded={open}
         className={cn(
