@@ -1,11 +1,32 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { bills, localDecisions, sourceRecords } from "@/data/records";
 import { sourceConnectors, topicProfiles } from "@/data/product-loop";
+import { timingSafeEqualStr } from "@/lib/api";
 import { repCount } from "@/lib/reps";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+function isAuthorized(request: NextRequest): boolean {
+  const expected = process.env.CRON_SECRET;
+  if (!expected) return false;
+  const provided =
+    request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ??
+    request.nextUrl.searchParams.get("secret") ??
+    "";
+  return timingSafeEqualStr(provided, expected);
+}
+
+export async function GET(request: NextRequest) {
+  // Minimal, non-revealing payload for anonymous callers (uptime probes etc.).
+  const now = new Date().toISOString();
+  if (!isAuthorized(request)) {
+    return NextResponse.json(
+      { ok: true, status: "healthy", time: now },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
+  // Authorized: include the full diagnostics.
   const counts = {
     bills: bills.length,
     localDecisions: localDecisions.length,
@@ -17,6 +38,7 @@ export async function GET() {
 
   const status = {
     ok: true,
+    status: "healthy",
     service: "By The People, For The People",
     version: "1.0.0",
     commit: process.env.VERCEL_GIT_COMMIT_SHA ?? "local",
@@ -32,7 +54,7 @@ export async function GET() {
       PLAUSIBLE_DOMAIN: Boolean(process.env.PLAUSIBLE_DOMAIN),
       SENTRY_DSN: Boolean(process.env.SENTRY_DSN),
     },
-    generatedAt: new Date().toISOString(),
+    generatedAt: now,
   };
 
   return NextResponse.json(status, {

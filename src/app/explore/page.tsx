@@ -18,6 +18,7 @@ export default function ExplorePage() {
       <section className="border-b border-record-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <SectionHeader
+            as="h1"
             eyebrow="Ask records"
             title="Search by what you need to know, not by government jargon."
             description="Ask whether something passed, who voted no, what changed, what got incorporated, what happens next, whether it touches a place, and where the proof is."

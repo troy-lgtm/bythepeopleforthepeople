@@ -14,6 +14,57 @@ export const STATE_NAMES: Record<string, string> = {
   PR: "Puerto Rico", VI: "U.S. Virgin Islands",
 };
 
+/**
+ * Known place jurisdictions that belong to a state but do not contain the state
+ * name in their label (e.g. "Los Angeles City Council" is California). Keys are
+ * lowercase substrings tested against a jurisdiction label; values are the
+ * owning state abbreviation. Extend this as place-level connectors land.
+ */
+const JURISDICTION_PLACE_TO_STATE: Array<{ match: string; abbr: string }> = [
+  { match: "los angeles", abbr: "CA" },
+];
+
+/**
+ * Resolve a free-text jurisdiction label (e.g. "California Legislature",
+ * "Los Angeles City Council", "Washington, DC") to a single state/territory
+ * abbreviation, or null when it cannot be tied to exactly one state.
+ *
+ * Matching is word-boundary and DC-aware so an ambiguous token like
+ * "Washington" does not cross-match the state of Washington against a
+ * "Washington, DC" jurisdiction.
+ */
+export function jurisdictionState(jurisdiction: string): string | null {
+  const label = jurisdiction.toLowerCase().trim();
+  if (!label) return null;
+
+  // DC markers win first so "Washington, DC" never reads as the state.
+  if (/\bd\.?c\.?\b/.test(label) || label.includes("district of columbia")) {
+    return "DC";
+  }
+
+  // Explicit place → state hints (cities/counties that omit the state name).
+  for (const { match, abbr } of JURISDICTION_PLACE_TO_STATE) {
+    if (label.includes(match)) return abbr;
+  }
+
+  // Otherwise require the full state name as a whole-word match. Test longest
+  // names first so "West Virginia" wins over "Virginia", "North Carolina" over
+  // "Carolina", etc.
+  const byLongest = Object.entries(STATE_NAMES)
+    .filter(([abbr]) => abbr !== "DC") // handled above
+    .sort((a, b) => b[1].length - a[1].length);
+  for (const [abbr, name] of byLongest) {
+    const re = new RegExp(`\\b${name.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
+    if (re.test(label)) return abbr;
+  }
+  return null;
+}
+
+/** True when a jurisdiction label belongs to the given state abbreviation. */
+export function jurisdictionInState(jurisdiction: string, abbr: string): boolean {
+  return jurisdictionState(jurisdiction) === abbr.toUpperCase();
+}
+
 export const STATE_CAPITAL: Record<string, string> = {
   AL: "Montgomery", AK: "Juneau", AZ: "Phoenix", AR: "Little Rock", CA: "Sacramento",
   CO: "Denver", CT: "Hartford", DE: "Dover", DC: "Washington",

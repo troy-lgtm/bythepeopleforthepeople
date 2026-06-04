@@ -77,6 +77,7 @@ export default function MethodologyPage() {
       <section className="border-b border-record-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <SectionHeader
+            as="h1"
             eyebrow="About / Methodology"
             title="A trust-first model for public decision intelligence."
             description="The site organizes public records into timelines, changes, votes, hearings, stakeholders, and source trails while keeping the product nonpartisan and factual."
@@ -107,7 +108,7 @@ export default function MethodologyPage() {
               "Label indexed, missing, or not-yet-indexed information plainly.",
               "Publish calm summaries that cite records instead of relying on unsupported claims.",
             ].map((step, index) => (
-              <div key={step} className="grid grid-cols-[auto_1fr] gap-3 rounded-lg border border-record-200 bg-paper-50 p-4">
+              <div key={index} className="grid grid-cols-[auto_1fr] gap-3 rounded-lg border border-record-200 bg-paper-50 p-4">
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ink-950 font-mono text-xs font-semibold text-white">
                   {index + 1}
                 </span>
@@ -125,9 +126,9 @@ export default function MethodologyPage() {
           description="The repeat-use loop only works if fresh records can enter the same trust model: source, change, answer, watch, alert."
         />
         <div className="grid gap-3">
-          {integrationReadiness.map((item) => (
+          {integrationReadiness.map((item, index) => (
             <div
-              key={item}
+              key={index}
               className="rounded-lg border border-record-200 bg-white p-4 text-sm leading-6 text-ink-800 shadow-line"
             >
               {item}

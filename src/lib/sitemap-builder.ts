@@ -14,6 +14,15 @@ type Entry = {
   priority?: number;
 };
 
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
 export function buildSitemap(entries: Entry[]): string {
   const lines: string[] = [
     `<?xml version="1.0" encoding="UTF-8"?>`,
@@ -21,8 +30,9 @@ export function buildSitemap(entries: Entry[]): string {
   ];
   for (const entry of entries) {
     lines.push(`  <url>`);
-    lines.push(`    <loc>${entry.loc}</loc>`);
-    if (entry.lastmod) lines.push(`    <lastmod>${entry.lastmod}</lastmod>`);
+    lines.push(`    <loc>${escapeXml(entry.loc)}</loc>`);
+    if (entry.lastmod)
+      lines.push(`    <lastmod>${escapeXml(entry.lastmod)}</lastmod>`);
     if (entry.changefreq)
       lines.push(`    <changefreq>${entry.changefreq}</changefreq>`);
     if (entry.priority !== undefined)

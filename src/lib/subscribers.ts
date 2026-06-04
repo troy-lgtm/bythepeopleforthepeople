@@ -111,6 +111,29 @@ export async function markSent(email: string, when: string): Promise<void> {
 }
 
 /**
+ * Best-effort fixed-window rate limit backed by Redis. Returns `{ ok: true }`
+ * (allowed) when no store is configured so local dev is never blocked. On the
+ * first hit in a window the key's TTL is set; once the count exceeds `limit`
+ * the caller is told to reject. Failures fail open — never block a legit
+ * subscriber because Redis hiccupped.
+ */
+export async function rateLimit(
+  key: string,
+  limit: number,
+  windowSeconds: number,
+): Promise<{ ok: boolean; count: number }> {
+  const r = redis();
+  if (!r) return { ok: true, count: 0 };
+  try {
+    const count = await r.incr(key);
+    if (count === 1) await r.expire(key, windowSeconds);
+    return { ok: count <= limit, count };
+  } catch {
+    return { ok: true, count: 0 };
+  }
+}
+
+/**
  * Real count of confirmed subscribers in a ZIP — for honest local social
  * proof ("N people near you get updates"). Returns 0 when the store is
  * unconfigured or no one has subscribed; callers must not invent a number.

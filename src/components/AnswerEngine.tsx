@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Search, ShieldCheck } from "lucide-react";
 import {
@@ -59,10 +59,33 @@ export function AnswerEngine({
     answerIntents.find((answer) => answer.id === selectedId) ??
     answerIntents[0];
 
-  const evidence = sourceEvidence.filter((record) =>
-    activeAnswer.evidenceIds.includes(record.id),
-  );
-  const relatedResults = getExploreItemsByIds(activeAnswer.relatedResultIds);
+  // If the query filtered out the selected answer, reset the selection to the
+  // first visible answer so the highlight does not point at a hidden row.
+  useEffect(() => {
+    if (!visibleAnswers.length) return;
+    if (!visibleAnswers.some((answer) => answer.id === selectedId)) {
+      setSelectedId(visibleAnswers[0].id);
+    }
+  }, [visibleAnswers, selectedId]);
+
+  const evidence = activeAnswer
+    ? sourceEvidence.filter((record) =>
+        activeAnswer.evidenceIds.includes(record.id),
+      )
+    : [];
+  const relatedResults = activeAnswer
+    ? getExploreItemsByIds(activeAnswer.relatedResultIds)
+    : [];
+
+  if (!activeAnswer) {
+    return (
+      <section className="rounded-lg border border-record-200 bg-white p-5 shadow-panel">
+        <p className="text-sm leading-6 text-ink-700">
+          No indexed answers are available yet.
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section className="rounded-lg border border-record-200 bg-white p-5 shadow-panel">
@@ -103,6 +126,7 @@ export function AnswerEngine({
                 key={answer.id}
                 type="button"
                 onClick={() => setSelectedId(answer.id)}
+                aria-pressed={activeAnswer.id === answer.id}
                 className={
                   activeAnswer.id === answer.id
                     ? "rounded-md border border-civic-500 bg-civic-50 p-3 text-left text-sm font-semibold text-civic-700"

@@ -7,6 +7,15 @@ type StakeholderListProps = {
 };
 
 export function StakeholderList({ stakeholders }: StakeholderListProps) {
+  if (!stakeholders.length) {
+    return (
+      <div className="rounded-lg border border-dashed border-record-200 bg-paper-50 p-6 text-sm leading-6 text-ink-700">
+        No stakeholders are named in the indexed record yet. Named positions
+        appear here only when an official source states them.
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-3">
       {stakeholders.map((stakeholder) => (

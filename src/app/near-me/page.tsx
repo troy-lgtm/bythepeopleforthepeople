@@ -14,7 +14,7 @@ import { LocationAutocomplete } from "@/components/LocationAutocomplete";
 import { PageShell } from "@/components/PageShell";
 import { SectionHeader } from "@/components/SectionHeader";
 import { bills, localDecisions } from "@/data/records";
-import { STATE_NAMES } from "@/data/states";
+import { jurisdictionInState, STATE_NAMES } from "@/data/states";
 import {
   congressConfigured,
   getMemberLegislation,
@@ -48,9 +48,10 @@ export default async function NearMePage() {
       <section className="border-b border-record-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <SectionHeader
+            as="h1"
             eyebrow="Your government, by level"
             title="Who represents you — and what they're doing."
-            description="One ZIP. Everyone from your city council up to your US senators, with the indexed records that hit close to home. Federal is live now; state and local fill in from official data, never invented."
+            description="Enter your ZIP (we don't use your device location) and see everyone from your city council up to your US senators, with the indexed records that hit close to home. Federal is live now; state and local fill in from official data, never invented."
           />
           <div className="mt-6 max-w-xl">
             <LocationAutocomplete
@@ -82,11 +83,13 @@ export default async function NearMePage() {
               aria-hidden="true"
             />
             <h2 className="mt-4 text-xl font-semibold text-ink-950">
-              Enter your ZIP to build your ladder.
+              Enter your ZIP above to build your ladder.
             </h2>
             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-ink-700">
-              We resolve your district and surface your representatives at each
-              level of government, plus the records that affect your place.
+              Use the ZIP field at the top of this page. We resolve your
+              district from that ZIP — no device location needed — and surface
+              your representatives at each level of government, plus the records
+              that affect your place.
             </p>
           </div>
         </section>
@@ -126,10 +129,14 @@ async function Levels({
   }
 
   const stateBills = bills
-    .filter((b) => b.jurisdiction.toLowerCase().includes(stateName.toLowerCase()))
+    .filter((b) => jurisdictionInState(b.jurisdiction, place.state))
     .slice(0, 6);
   const localFiles = localDecisions
-    .filter((d) => d.jurisdiction.toLowerCase().includes(place.city.toLowerCase()))
+    .filter(
+      (d) =>
+        d.jurisdiction.toLowerCase().includes(place.city.toLowerCase()) &&
+        jurisdictionInState(d.jurisdiction, place.state),
+    )
     .slice(0, 6);
 
   const causes = await readCauses();
@@ -359,8 +366,15 @@ function FederalCard({
             Recent sponsored
           </p>
           <ul className="mt-1 grid gap-1">
-            {recent.map((b, i) => (
-              <li key={i} className="text-xs leading-5 text-ink-700">
+            {recent.map((b) => (
+              <li
+                key={
+                  b.url ||
+                  [b.congress, b.type, b.number].filter(Boolean).join("-") ||
+                  b.title
+                }
+                className="text-xs leading-5 text-ink-700"
+              >
                 {b.url ? (
                   <a
                     href={b.url}

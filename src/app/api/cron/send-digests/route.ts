@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { jsonError, jsonOk } from "@/lib/api";
+import { jsonError, jsonOk, timingSafeEqualStr } from "@/lib/api";
 import { buildDigest, renderDigestHtml, renderDigestText } from "@/lib/digest";
 import { emailConfigured, sendEmail } from "@/lib/email";
 import { isStoreConfigured, listConfirmed, markSent } from "@/lib/subscribers";
@@ -29,8 +29,9 @@ async function handle(request: NextRequest) {
   }
   const provided =
     request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ??
-    request.nextUrl.searchParams.get("secret");
-  if (provided !== expected) {
+    request.nextUrl.searchParams.get("secret") ??
+    "";
+  if (!timingSafeEqualStr(provided, expected)) {
     return jsonError(401, "unauthorized", "Provide CRON_SECRET to invoke.");
   }
 

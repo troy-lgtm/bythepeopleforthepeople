@@ -50,6 +50,7 @@ export function HeroCauseMatch() {
   const [preview, setPreview] = useState<PreviewState>({ status: "idle" });
   const [creating, setCreating] = useState(false);
   const [creatingId, setCreatingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const trimmed = query.trim();
@@ -60,6 +61,7 @@ export function HeroCauseMatch() {
     if (creating) return;
     setCreating(true);
     setCreatingId(marker);
+    setError(null);
     try {
       const existingRes = await fetch("/api/causes");
       const existingJson = (await existingRes.json()) as {
@@ -79,6 +81,7 @@ export function HeroCauseMatch() {
       if (!res.ok) {
         setCreating(false);
         setCreatingId(null);
+        setError("We couldn't save that just now. Please try again.");
         return;
       }
       try {
@@ -91,6 +94,7 @@ export function HeroCauseMatch() {
     } catch {
       setCreating(false);
       setCreatingId(null);
+      setError("We couldn't save that just now. Please try again.");
     }
   }
 
@@ -156,7 +160,10 @@ export function HeroCauseMatch() {
         setPreview({ status: "error" });
       }
     }, 350);
-    return () => clearTimeout(handle);
+    return () => {
+      clearTimeout(handle);
+      abortRef.current?.abort();
+    };
   }, [trimmed]);
 
   const message = useMemo(() => {
@@ -266,6 +273,11 @@ export function HeroCauseMatch() {
           ) : null}
           {preview.status === "done" ? (
             <p className="text-xs font-semibold text-civic-700">{message}</p>
+          ) : null}
+          {error ? (
+            <p role="alert" className="text-xs font-semibold text-notice-500">
+              {error}
+            </p>
           ) : null}
         </div>
       </div>

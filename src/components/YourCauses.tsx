@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Plus, Sparkles } from "lucide-react";
 import { matchCause, matchCount } from "@/lib/cause-matcher";
 import { readCauses } from "@/lib/causes";
+import { STARTER_CAUSES } from "@/data/starter-causes";
 
 export async function YourCauses() {
   const causes = await readCauses();
@@ -38,7 +39,7 @@ export async function YourCauses() {
                 href="/causes/starters"
                 className="inline-flex h-11 items-center justify-center rounded-md border border-record-200 bg-white px-4 text-sm font-semibold text-ink-950 shadow-line hover:border-civic-500"
               >
-                Browse 12 starter cards
+                Browse {STARTER_CAUSES.length} starter cards
               </Link>
             </div>
           </div>

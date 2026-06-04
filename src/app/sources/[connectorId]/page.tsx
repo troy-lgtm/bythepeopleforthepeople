@@ -142,7 +142,7 @@ export default async function ConnectorPage({ params }: ConnectorPageProps) {
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-civic-700">
                 Status
               </p>
-              <div className="mt-4 grid gap-4 text-sm">
+              <dl className="mt-4 grid gap-4 text-sm">
                 <Stat
                   icon={isIngesting ? CheckCircle2 : AlertCircle}
                   iconTone={isIngesting ? "text-civic-700" : "text-notice-500"}
@@ -161,7 +161,7 @@ export default async function ConnectorPage({ params }: ConnectorPageProps) {
                   label="Jurisdiction"
                   value={connector.jurisdiction}
                 />
-              </div>
+              </dl>
             </div>
           </div>
         </div>

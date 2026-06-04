@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ExternalLink, MessageCircle, Printer } from "lucide-react";
+import { ExternalLink, MessageCircle } from "lucide-react";
 import { CopyCommentButton } from "@/components/CopyCommentButton";
 import { PageShell } from "@/components/PageShell";
+import { PrintButton } from "@/components/PrintButton";
 import { SectionHeader } from "@/components/SectionHeader";
 import { getBillBySlug, getLocalDecisionBySlug } from "@/data/records";
 
@@ -11,13 +12,62 @@ type CommentPageProps = {
   params: Promise<{ type: string; slug: string }>;
 };
 
-export const metadata: Metadata = {
-  title: "Public-comment letter",
-  description:
-    "Generated public-comment letter for any indexed civic record. Pre-fills the official body, citation, and source URL.",
-};
-
 const BASE = "https://bythepeopleforthepeople.com";
+
+function resolveRecord(type: string, slug: string) {
+  if (type === "bills") {
+    const bill = getBillBySlug(slug);
+    if (!bill) return null;
+    return {
+      title: bill.title,
+      jurisdiction: bill.jurisdiction,
+      status: bill.status,
+      href: `/bills/${bill.slug}`,
+    };
+  }
+  if (type === "local") {
+    const decision = getLocalDecisionBySlug(slug);
+    if (!decision) return null;
+    return {
+      title: decision.title,
+      jurisdiction: decision.jurisdiction,
+      status: decision.status,
+      href: `/local/${decision.slug}`,
+    };
+  }
+  return null;
+}
+
+export async function generateMetadata({
+  params,
+}: CommentPageProps): Promise<Metadata> {
+  const { type, slug } = await params;
+  const record = resolveRecord(type, slug);
+
+  if (!record) {
+    return { title: "Public-comment letter" };
+  }
+
+  const title = `Public-comment letter: ${record.title}`;
+  const description = `A ready-to-send public-comment letter for ${record.title} (${record.jurisdiction}, status: ${record.status}). Pre-fills the official body, citation, and source URL.`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `/comment/${type}/${slug}` },
+    openGraph: {
+      title,
+      description,
+      type: "article",
+      url: `/comment/${type}/${slug}`,
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+    },
+  };
+}
 
 function buildLetter(
   body: string,
@@ -146,19 +196,12 @@ export default async function CommentPage({ params }: CommentPageProps) {
               </p>
             </div>
           </div>
-          <pre className="mt-5 max-h-[480px] overflow-auto whitespace-pre-wrap rounded-md border border-record-200 bg-paper-50 p-4 font-mono text-xs leading-5 text-ink-800">
+          <pre className="mt-5 max-h-[480px] overflow-auto whitespace-pre-wrap break-words rounded-md border border-record-200 bg-paper-50 p-4 font-mono text-xs leading-5 text-ink-800">
             {letter}
           </pre>
           <div className="mt-4 flex flex-wrap gap-2">
             <CopyCommentButton text={letter} />
-            <button
-              type="button"
-              className="inline-flex h-10 items-center gap-2 rounded-md border border-record-200 bg-white px-4 text-sm font-semibold text-ink-900 shadow-line hover:border-civic-500"
-              onClick={undefined}
-            >
-              <Printer className="h-4 w-4" aria-hidden="true" />
-              Use browser print
-            </button>
+            <PrintButton />
           </div>
         </article>
         <aside className="rounded-lg border border-record-200 bg-paper-50 p-6">

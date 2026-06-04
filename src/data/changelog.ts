@@ -172,7 +172,7 @@ export const changelog: ChangelogEntry[] = [
     kind: "product",
     title: "Public API with citation policy",
     body:
-      "17 endpoints under /api/* return JSON with a citation header. Companion files: /llms.txt for LLM grounding, /.well-known/civic-records.json for tooling discovery. /developers documents every endpoint.",
+      "22 endpoints under /api/* return JSON with a citation header. Companion files: /llms.txt for LLM grounding, /.well-known/civic-records.json for tooling discovery. /developers documents every endpoint.",
   },
   {
     date: "2026-05-21",

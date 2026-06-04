@@ -606,7 +606,7 @@ export default async function CausePage({ params }: CausePageProps) {
                   {suggestions.map((s) => (
                     <li key={s.starter.id}>
                       <Link
-                        href="/causes/new"
+                        href={`/causes/new?starter=${encodeURIComponent(s.starter.id)}`}
                         className="flex items-start gap-3 rounded-md border border-record-200 bg-white p-3 transition hover:border-civic-500"
                       >
                         <span className="text-xl" aria-hidden="true">

@@ -27,7 +27,7 @@ const DATASETS = [
     id: "federal-reps",
     label: "Federal representatives",
     description:
-      "All 536 current U.S. Congress members with chamber, state, district, party, contact info, and Bioguide ID. Sourced from united-states/congress-legislators.",
+      "Current U.S. Congress members — 535 voting members plus non-voting delegates — with chamber, state, district, party, contact info, and Bioguide ID. Sourced from united-states/congress-legislators.",
   },
   {
     id: "topics",
@@ -55,6 +55,7 @@ export default function DatasetsPage() {
       <section className="border-b border-record-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <SectionHeader
+            as="h1"
             eyebrow="Datasets"
             title="Bulk exports for researchers, newsrooms, AI engines."
             description="The whole indexed corpus as CSV or JSON. No API key required at fair-use volumes. Citation required."

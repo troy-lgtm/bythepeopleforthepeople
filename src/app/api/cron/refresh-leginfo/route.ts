@@ -1,6 +1,6 @@
 import { type NextRequest } from "next/server";
 import { sourceRecords } from "@/data/records";
-import { jsonError, jsonOk } from "@/lib/api";
+import { jsonError, jsonOk, timingSafeEqualStr } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -14,10 +14,18 @@ export const maxDuration = 60;
  */
 export async function GET(request: NextRequest) {
   const expected = process.env.CRON_SECRET;
+  if (!expected) {
+    return jsonError(
+      503,
+      "cron_secret_unset",
+      "CRON_SECRET is not set. Refusing to run until it is configured.",
+    );
+  }
   const provided =
     request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ??
-    request.nextUrl.searchParams.get("secret");
-  if (expected && provided !== expected) {
+    request.nextUrl.searchParams.get("secret") ??
+    "";
+  if (!timingSafeEqualStr(provided, expected)) {
     return jsonError(401, "unauthorized", "Provide CRON_SECRET to invoke.");
   }
 

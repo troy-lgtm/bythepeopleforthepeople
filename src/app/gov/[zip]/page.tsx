@@ -6,7 +6,7 @@ import { GovCardShare } from "@/components/GovCardShare";
 import { PageShell } from "@/components/PageShell";
 import { SectionHeader } from "@/components/SectionHeader";
 import { bills, localDecisions } from "@/data/records";
-import { STATE_NAMES } from "@/data/states";
+import { jurisdictionInState } from "@/data/states";
 import { slugForRep } from "@/lib/federal-reps";
 import { lookupZip, type Place } from "@/lib/place";
 import { liveLookupZip } from "@/lib/place-fallback";
@@ -48,13 +48,13 @@ function buildSnapshot(place: Place): Snapshot {
       party: houseRep.party,
     });
   }
-  const stateName = STATE_NAMES[place.state] ?? place.state;
   const recordsNear =
-    bills.filter((b) =>
-      b.jurisdiction.toLowerCase().includes(stateName.toLowerCase()),
-    ).length +
-    localDecisions.filter((d) =>
-      d.jurisdiction.toLowerCase().includes(place.city.toLowerCase()),
+    bills.filter((b) => jurisdictionInState(b.jurisdiction, place.state))
+      .length +
+    localDecisions.filter(
+      (d) =>
+        d.jurisdiction.toLowerCase().includes(place.city.toLowerCase()) &&
+        jurisdictionInState(d.jurisdiction, place.state),
     ).length;
   return { place, district, reps, recordsNear };
 }
@@ -125,6 +125,7 @@ export default async function GovPage({ params }: GovPageProps) {
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-2 lg:items-start lg:px-8">
           <div>
             <SectionHeader
+              as="h1"
               eyebrow="Your government, by level"
               title={`${place.city}, ${place.state}`}
               description={`District ${snap.district} · ${place.county} County · ${snap.recordsNear} indexed records affecting your area. Nonpartisan; every claim links to its official source.`}

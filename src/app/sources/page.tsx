@@ -19,6 +19,7 @@ export default function SourcesPage() {
       <section className="border-b border-record-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <SectionHeader
+            as="h1"
             eyebrow="Sources"
             title="The provenance layer behind every answer."
             description="Every claim should point back to a source record. This page shows the indexed source records and the official systems the product is shaped to ingest."

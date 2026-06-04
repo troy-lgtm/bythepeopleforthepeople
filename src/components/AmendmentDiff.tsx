@@ -7,6 +7,16 @@ type AmendmentDiffProps = {
 };
 
 export function AmendmentDiff({ amendments }: AmendmentDiffProps) {
+  if (!amendments.length) {
+    return (
+      <div className="rounded-lg border border-dashed border-record-200 bg-paper-50 p-6 text-sm leading-6 text-ink-700">
+        No amendment comparison is indexed for this record yet. Removed and
+        added language will appear here when an official text version is
+        available to compare.
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-4">
       {amendments.map((amendment) => (

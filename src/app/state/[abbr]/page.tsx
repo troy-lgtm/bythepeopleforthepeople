@@ -7,7 +7,7 @@ import { PageShell } from "@/components/PageShell";
 import { SectionHeader } from "@/components/SectionHeader";
 import { bills, localDecisions } from "@/data/records";
 import { sourceConnectors } from "@/data/product-loop";
-import { STATE_CAPITAL, STATE_NAMES } from "@/data/states";
+import { jurisdictionInState, STATE_CAPITAL, STATE_NAMES } from "@/data/states";
 import { repsByState, slugForRep } from "@/lib/federal-reps";
 import { breadcrumbSchema } from "@/lib/schema";
 
@@ -69,14 +69,13 @@ export default async function StatePage({ params }: StatePageProps) {
   const houseMembers = reps.filter((r) => r.type === "rep");
 
   const stateBills = bills.filter((b) =>
-    b.jurisdiction.toLowerCase().includes(stateName.toLowerCase()),
+    jurisdictionInState(b.jurisdiction, upper),
   );
   const stateLocal = localDecisions.filter((d) =>
-    d.jurisdiction.toLowerCase().includes(stateName.toLowerCase()),
+    jurisdictionInState(d.jurisdiction, upper),
   );
   const stateConnectors = sourceConnectors.filter((c) =>
-    c.jurisdiction.toLowerCase().includes(stateName.toLowerCase()) ||
-    c.jurisdiction.toLowerCase().includes("california legislature"),
+    jurisdictionInState(c.jurisdiction, upper),
   );
 
   const totalIndexed =

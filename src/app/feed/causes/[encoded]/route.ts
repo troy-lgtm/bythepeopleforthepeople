@@ -16,6 +16,13 @@ function escapeXml(value: string): string {
     .replace(/'/g, "&apos;");
 }
 
+/** ISO string for a date, falling back to `fallback` when input is unparseable. */
+function safeIso(input: string | undefined, fallback: string): string {
+  if (!input) return fallback;
+  const d = new Date(input);
+  return Number.isNaN(d.getTime()) ? fallback : d.toISOString();
+}
+
 export async function GET(
   _request: NextRequest,
   context: { params: Promise<{ encoded: string }> },
@@ -39,7 +46,7 @@ export async function GET(
         `    <id>tag:bythepeopleforthepeople.com,2026:bill/${escapeXml(m.bill.slug)}</id>\n` +
         `    <title>${escapeXml(`${m.bill.title} (${m.bill.status})`)}</title>\n` +
         `    <link href="${escapeXml(`${BASE}/bills/${m.bill.slug}`)}" />\n` +
-        `    <updated>${new Date(m.bill.lastAction.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? generated).toISOString()}</updated>\n` +
+        `    <updated>${safeIso(m.bill.lastAction.match(/\d{4}-\d{2}-\d{2}/)?.[0], generated)}</updated>\n` +
         `    <category term="bill" />\n` +
         `    <summary>${escapeXml(`Match: ${m.reasons.join(" · ")}. ${m.bill.summary}`)}</summary>\n` +
         `  </entry>\n`,
@@ -51,7 +58,7 @@ export async function GET(
         `    <id>tag:bythepeopleforthepeople.com,2026:local/${escapeXml(m.decision.slug)}</id>\n` +
         `    <title>${escapeXml(`${m.decision.title} (${m.decision.status})`)}</title>\n` +
         `    <link href="${escapeXml(`${BASE}/local/${m.decision.slug}`)}" />\n` +
-        `    <updated>${new Date(m.decision.meetingDate).toISOString()}</updated>\n` +
+        `    <updated>${safeIso(m.decision.meetingDate, generated)}</updated>\n` +
         `    <category term="local" />\n` +
         `    <summary>${escapeXml(`Match: ${m.reasons.join(" · ")}. ${m.decision.summary}`)}</summary>\n` +
         `  </entry>\n`,

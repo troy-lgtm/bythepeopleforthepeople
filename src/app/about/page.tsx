@@ -17,9 +17,10 @@ export default function AboutPage() {
       <section className="border-b border-record-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <SectionHeader
+            as="h1"
             eyebrow="About"
             title="Who runs this, who funds it, and how we stay nonpartisan."
-            description="A civic-trust product loses credibility the moment it hides its operators. Everything below is on-the-record."
+            description="A civic-trust product loses credibility the moment it hides its operators. Everything below is on the record, and the responsible editor is named at public launch."
           />
         </div>
       </section>
@@ -29,15 +30,15 @@ export default function AboutPage() {
           <Users className="h-6 w-6 text-civic-700" aria-hidden="true" />
           <h2 className="mt-4 text-xl font-semibold text-ink-950">Operators</h2>
           <p className="mt-3 text-sm leading-6 text-ink-700">
-            This site is operated as an independent civic project. The named
-            operators below are accountable for every claim, every source, and
-            every correction.
+            This site is operated as an independent civic project. The operators
+            below are accountable for every claim, every source, and every
+            correction.
           </p>
           <ul className="mt-4 grid gap-2 text-sm leading-6 text-ink-800">
             <li>
-              <strong>Editor:</strong> the named editor will be listed here
-              before public launch. Pseudonymous operation defeats the purpose
-              of a trust product.
+              <strong>Editor:</strong> a responsible editor will be named on this
+              page at public launch. We do not operate pseudonymously, because
+              anonymity defeats the purpose of a trust product.
             </li>
             <li>
               <strong>Engineering:</strong> open-source contributions tracked in

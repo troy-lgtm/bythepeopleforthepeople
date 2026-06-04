@@ -1,5 +1,6 @@
 import { bills, localDecisions } from "@/data/records";
 import { upcomingActions } from "@/data/product-loop";
+import { foldIcsLine } from "@/lib/ics";
 
 export const dynamic = "force-static";
 export const revalidate = 1800;
@@ -102,10 +103,10 @@ export async function GET() {
       `DTSTAMP:${toIcsDate(now)}`,
       `DTSTART:${toIcsDate(event.start)}`,
       `DTEND:${toIcsDate(end)}`,
-      `SUMMARY:${escapeIcs(event.title)}`,
-      `DESCRIPTION:${escapeIcs(event.description)}`,
+      foldIcsLine(`SUMMARY:${escapeIcs(event.title)}`),
+      foldIcsLine(`DESCRIPTION:${escapeIcs(event.description)}`),
       `URL:${escapeIcs(event.url)}`,
-      `LOCATION:${escapeIcs(event.location)}`,
+      foldIcsLine(`LOCATION:${escapeIcs(event.location)}`),
       "END:VEVENT",
     );
   }

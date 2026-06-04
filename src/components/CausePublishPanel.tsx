@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Check, Copy, Rss } from "lucide-react";
+import { copyText } from "@/lib/clipboard";
 
 type CausePublishPanelProps = {
   feedUrl: string;
@@ -16,13 +17,10 @@ export function CausePublishPanel({
   const [copyState, setCopyState] = useState<{ [k: string]: "idle" | "copied" }>({});
 
   async function copy(key: string, value: string) {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopyState((s) => ({ ...s, [key]: "copied" }));
-      setTimeout(() => setCopyState((s) => ({ ...s, [key]: "idle" })), 2500);
-    } catch {
-      // ignore
-    }
+    const ok = await copyText(value);
+    if (!ok) return;
+    setCopyState((s) => ({ ...s, [key]: "copied" }));
+    setTimeout(() => setCopyState((s) => ({ ...s, [key]: "idle" })), 2500);
   }
 
   return (

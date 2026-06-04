@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "By The People, For The People",
-    short_name: "BTPFTP",
+    short_name: "By The People",
     description:
       "Source-anchored public-decision intelligence. Nonpartisan civic records, indexed.",
     start_url: "/",

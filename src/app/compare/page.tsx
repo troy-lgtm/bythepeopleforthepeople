@@ -140,6 +140,7 @@ export default async function ComparePage({
       <section className="border-b border-record-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <SectionHeader
+            as="h1"
             eyebrow="Compare"
             title="Side-by-side civic comparison"
             description="Pick two entities of the same kind to compare them row by row. Source-anchored. No partisan scoring."
@@ -176,11 +177,13 @@ export default async function ComparePage({
                 className="h-11 rounded-md border border-record-200 bg-paper-50 px-3 text-sm text-ink-950 outline-none focus:border-civic-500 focus:bg-white"
               >
                 <option value="">Select…</option>
-                {options.map((opt) => (
-                  <option key={opt.key} value={opt.key}>
-                    {opt.label}
-                  </option>
-                ))}
+                {options
+                  .filter((opt) => opt.key !== a)
+                  .map((opt) => (
+                    <option key={opt.key} value={opt.key}>
+                      {opt.label}
+                    </option>
+                  ))}
               </select>
             </label>
             <button
@@ -190,7 +193,12 @@ export default async function ComparePage({
               Compare
             </button>
           </form>
-          {entityA && entityB && entityA.kind !== entityB.kind ? (
+          {a && b && a === b ? (
+            <p className="mt-4 rounded-md border border-notice-100 bg-notice-50 px-3 py-2 text-xs leading-5 text-notice-500">
+              You picked the same entity for both sides. Choose a different
+              Entity B to see a meaningful comparison.
+            </p>
+          ) : entityA && entityB && entityA.kind !== entityB.kind ? (
             <p className="mt-4 rounded-md border border-notice-100 bg-notice-50 px-3 py-2 text-xs leading-5 text-notice-500">
               Compare works best within the same kind ({entityA.kind} vs{" "}
               {entityB.kind}). Rows are mismatched.
@@ -259,7 +267,20 @@ function EntityCard({
                   </span>
                 ) : null}
               </dt>
-              <dd className="text-sm leading-6 text-ink-900">{row.value}</dd>
+              <dd className="text-sm leading-6 text-ink-900">
+                {/^https?:\/\//.test(row.value) ? (
+                  <a
+                    href={row.value}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="break-all text-civic-700 underline hover:text-civic-600"
+                  >
+                    {row.value}
+                  </a>
+                ) : (
+                  row.value
+                )}
+              </dd>
             </div>
           );
         })}

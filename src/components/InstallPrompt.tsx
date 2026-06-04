@@ -38,7 +38,10 @@ export function InstallPrompt() {
 
     // iOS Safari never fires beforeinstallprompt — show a manual hint.
     const ua = window.navigator.userAgent;
-    const isIos = /iphone|ipad|ipod/i.test(ua);
+    // iPadOS 13+ reports a desktop "Macintosh" UA; detect it via touch points.
+    const isIpadOS =
+      /macintosh/i.test(ua) && (navigator.maxTouchPoints ?? 0) > 1;
+    const isIos = /iphone|ipad|ipod/i.test(ua) || isIpadOS;
     const isSafari = /safari/i.test(ua) && !/crios|fxios|chrome|android/i.test(ua);
     let timer: ReturnType<typeof setTimeout> | undefined;
     if (isIos && isSafari) {

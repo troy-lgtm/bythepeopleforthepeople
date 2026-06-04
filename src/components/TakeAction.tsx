@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Calendar, Mail, FileText, MessageCircle, Copy, ExternalLink } from "lucide-react";
 import { buildIcs, dataUrlForIcs } from "@/lib/ics";
+import { copyText } from "@/lib/clipboard";
 
 type TakeActionRecord = {
   title: string;
@@ -56,13 +57,9 @@ export function TakeAction({ record }: TakeActionProps) {
   const cpraTemplate = buildCpraTemplate(record);
 
   async function copyCpra() {
-    try {
-      await window.navigator.clipboard.writeText(cpraTemplate);
-      setCopyState("copied");
-      window.setTimeout(() => setCopyState("idle"), 2500);
-    } catch {
-      setCopyState("error");
-    }
+    const ok = await copyText(cpraTemplate);
+    setCopyState(ok ? "copied" : "error");
+    window.setTimeout(() => setCopyState("idle"), 2500);
   }
 
   return (

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Check, Copy, Download, Send, Share2 } from "lucide-react";
 import { track } from "@/lib/analytics";
+import { copyText } from "@/lib/clipboard";
 
 type Props = {
   shareUrl: string;
@@ -18,7 +19,9 @@ export function GovCardShare({
   surface = "gov",
 }: Props) {
   const [canShare, setCanShare] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">(
+    "idle",
+  );
 
   useEffect(() => {
     setCanShare(typeof navigator !== "undefined" && !!navigator.share);
@@ -34,14 +37,14 @@ export function GovCardShare({
   }
 
   async function copy() {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
+    const ok = await copyText(shareUrl);
+    if (ok) {
+      setCopyStatus("copied");
       track("share", { surface, method: "copy" });
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      /* ignore */
+    } else {
+      setCopyStatus("error");
     }
+    setTimeout(() => setCopyStatus("idle"), 2000);
   }
 
   const tweet = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
@@ -65,11 +68,13 @@ export function GovCardShare({
           onClick={copy}
           className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-record-200 bg-white px-3 text-sm font-semibold text-ink-900 transition hover:border-civic-500"
         >
-          {copied ? (
+          {copyStatus === "copied" ? (
             <>
               <Check className="h-4 w-4 text-civic-700" aria-hidden="true" />
               Copied
             </>
+          ) : copyStatus === "error" ? (
+            "Copy failed"
           ) : (
             <>
               <Copy className="h-4 w-4" aria-hidden="true" />
@@ -107,6 +112,13 @@ export function GovCardShare({
           Bluesky
         </a>
       </div>
+      <p className="sr-only" role="status" aria-live="polite">
+        {copyStatus === "copied"
+          ? "Link copied to clipboard."
+          : copyStatus === "error"
+            ? "Copy failed. Please copy the link manually."
+            : ""}
+      </p>
     </div>
   );
 }

@@ -85,7 +85,11 @@ export default async function PersonPage({ params }: EntityPageProps) {
                 {entity.name}
               </h1>
               <p className="mt-3 text-base font-medium text-ink-600">
-                {entity.role} - {entity.jurisdiction}
+                {entity.role}
+                <span aria-hidden="true" className="px-1.5">
+                  ·
+                </span>
+                {entity.jurisdiction}
               </p>
               <p className="mt-5 max-w-3xl text-base leading-7 text-ink-700">
                 {entity.summary}
@@ -118,20 +122,27 @@ export default async function PersonPage({ params }: EntityPageProps) {
           </div>
         </div>
         <div className="grid gap-4">
-          {relatedItems.map((item) => (
-            <DecisionCard
-              key={item.id}
-              title={item.title}
-              href={item.href}
-              jurisdiction={item.jurisdiction}
-              type={item.type}
-              status={item.status}
-              date={item.date}
-              summary={item.summary}
-              topics={[item.topic]}
-              sources={getSourcesByIds(item.sourceIds)}
-            />
-          ))}
+          {relatedItems.length ? (
+            relatedItems.map((item) => (
+              <DecisionCard
+                key={item.id}
+                title={item.title}
+                href={item.href}
+                jurisdiction={item.jurisdiction}
+                type={item.type}
+                status={item.status}
+                date={item.date}
+                summary={item.summary}
+                topics={[item.topic]}
+                sources={getSourcesByIds(item.sourceIds)}
+              />
+            ))
+          ) : (
+            <div className="rounded-lg border border-dashed border-record-200 bg-paper-50 p-6 text-sm leading-6 text-ink-700">
+              No indexed records are linked to this profile yet. New decisions,
+              votes, and documents will appear here as they are indexed.
+            </div>
+          )}
         </div>
       </section>
     </PageShell>

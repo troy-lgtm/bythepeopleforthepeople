@@ -11,13 +11,29 @@ type Status =
   | { kind: "updated" }
   | { kind: "error"; message: string };
 
+// Pragmatic email shape check: a local part, an @, and a dotted domain.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export function SubscribeForm() {
   const [email, setEmail] = useState("");
   const [cadence, setCadence] = useState<"weekly" | "daily">("weekly");
   const [consent, setConsent] = useState(false);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
 
+  const trimmedEmail = email.trim();
+  const emailValid = EMAIL_RE.test(trimmedEmail);
+  // Only flag an invalid-email message once the user has typed something.
+  const emailError = trimmedEmail.length > 0 && !emailValid;
+  const consentError = status.kind === "error" && !consent;
+
   async function submit() {
+    if (!emailValid) {
+      setStatus({
+        kind: "error",
+        message: "Enter a valid email address.",
+      });
+      return;
+    }
     if (!consent) {
       setStatus({ kind: "error", message: "Please check the consent box." });
       return;
@@ -27,7 +43,7 @@ export function SubscribeForm() {
       const res = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, cadence, consent }),
+        body: JSON.stringify({ email: trimmedEmail, cadence, consent }),
       });
       const json = (await res.json().catch(() => ({}))) as {
         ok?: boolean;
@@ -43,8 +59,13 @@ export function SubscribeForm() {
         });
         return;
       }
-      track("subscribe", { cadence });
-      setStatus(json.data?.status === "updated" ? { kind: "updated" } : { kind: "pending" });
+      if (json.data?.status === "updated") {
+        // Already-confirmed address; preferences refreshed, not a new signup.
+        setStatus({ kind: "updated" });
+      } else {
+        track("subscribe", { cadence });
+        setStatus({ kind: "pending" });
+      }
     } catch {
       setStatus({ kind: "error", message: "Network error. Try again." });
     }
@@ -101,8 +122,18 @@ export function SubscribeForm() {
             inputMode="email"
             autoComplete="email"
             enterKeyHint="done"
+            aria-invalid={emailError}
+            aria-describedby={emailError ? "subscribe-email-error" : undefined}
             className="h-12 rounded-md border border-record-200 bg-paper-50 px-3 text-base text-ink-950 outline-none focus:border-civic-500 focus:bg-white sm:h-11 sm:text-sm"
           />
+          {emailError ? (
+            <span
+              id="subscribe-email-error"
+              className="text-xs leading-5 text-notice-500"
+            >
+              Enter a valid email address (name@example.com).
+            </span>
+          ) : null}
         </label>
 
         <div className="grid gap-1">
@@ -135,6 +166,8 @@ export function SubscribeForm() {
             type="checkbox"
             checked={consent}
             onChange={(e) => setConsent(e.target.checked)}
+            aria-invalid={consentError}
+            aria-describedby={consentError ? "subscribe-error" : undefined}
             className="mt-0.5 h-4 w-4 rounded border-record-200 text-civic-600 focus:ring-civic-500"
           />
           <span>
@@ -145,7 +178,12 @@ export function SubscribeForm() {
         </label>
 
         {status.kind === "error" ? (
-          <p className="rounded-md border border-notice-100 bg-notice-50 px-3 py-2 text-xs leading-5 text-notice-500">
+          <p
+            id="subscribe-error"
+            role="alert"
+            aria-live="assertive"
+            className="rounded-md border border-notice-100 bg-notice-50 px-3 py-2 text-xs leading-5 text-notice-500"
+          >
             {status.message}
           </p>
         ) : null}
@@ -153,7 +191,7 @@ export function SubscribeForm() {
         <button
           type="button"
           onClick={submit}
-          disabled={status.kind === "submitting" || !email}
+          disabled={status.kind === "submitting" || !emailValid}
           className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-ink-950 px-5 text-sm font-semibold text-white transition hover:bg-ink-800 disabled:opacity-60"
         >
           {status.kind === "submitting" ? (

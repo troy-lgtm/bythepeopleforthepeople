@@ -50,6 +50,7 @@ export default function TodayPage() {
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-2 lg:items-start lg:px-8">
           <div>
             <SectionHeader
+              as="h1"
               eyebrow="What's moving"
               title="What moved in the public record."
               description="The latest indexed changes — bills chaptered, votes recorded, council actions. Source-attributed, never breaking-news speculation."

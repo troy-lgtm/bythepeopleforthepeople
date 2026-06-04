@@ -13,6 +13,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const causes = url.searchParams.get("causes") ?? "0";
+  const causesNum = Number.parseInt(causes, 10) || 0;
   const matched = url.searchParams.get("matched") ?? "0";
   const moved = url.searchParams.get("moved") ?? "0";
   const place = url.searchParams.get("place") ?? "";
@@ -114,7 +115,7 @@ export async function GET(request: NextRequest) {
               marginTop: 14,
             }}
           >
-            {causes} cause{causes === "1" ? "" : "s"} I track
+            {causes} cause{causesNum === 1 ? "" : "s"} I track
             {place ? ` in ${place}` : ""}
           </span>
         </div>

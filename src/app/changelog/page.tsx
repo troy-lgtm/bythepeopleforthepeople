@@ -33,6 +33,7 @@ export default function ChangelogPage() {
       <section className="border-b border-record-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <SectionHeader
+            as="h1"
             eyebrow="Changelog"
             title="Versioned methodology, versioned trust."
             description="Every change to methodology, coverage, product, infrastructure, or trust language lands here. Append-only. The corrections log covers per-record factual fixes; this log covers product-wide changes."

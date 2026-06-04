@@ -37,8 +37,12 @@ export type ZipSuggestion = { zip: string; city: string; state: string };
 
 /**
  * Address-style autocomplete over the static metro table. Matches a ZIP prefix
- * or a city/state substring. Long-tail ZIPs not in the table still resolve on
+ * or a city-name substring. Long-tail ZIPs not in the table still resolve on
  * submit via the Census fallback.
+ *
+ * We deliberately match the city NAME only — not the ", CA" state suffix — so a
+ * two-letter query like "ca" surfaces cities starting with those letters rather
+ * than flooding the list with every California ZIP.
  */
 export function searchZips(q: string, limit = 8): ZipSuggestion[] {
   const query = q.trim().toLowerCase();
@@ -47,8 +51,8 @@ export function searchZips(q: string, limit = 8): ZipSuggestion[] {
   const seen = new Set<string>();
   for (const [zip, entry] of Object.entries(zipMap)) {
     if (zip.startsWith("_") || !isZipEntry(entry)) continue;
-    const label = `${entry.city}, ${entry.state}`.toLowerCase();
-    if (zip.startsWith(query) || label.includes(query)) {
+    const city = entry.city.toLowerCase();
+    if (zip.startsWith(query) || city.includes(query)) {
       const dedupe = `${entry.city}-${entry.state}-${zip}`;
       if (seen.has(dedupe)) continue;
       seen.add(dedupe);

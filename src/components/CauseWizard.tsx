@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AlertCircle, ArrowRight, Plus, Sparkles, X } from "lucide-react";
@@ -86,6 +86,8 @@ type CauseWizardProps = {
   defaultJurisdictions: string[];
   initialTitle?: string;
   initialKeywords?: string;
+  initialOutcome?: string;
+  initialStarterId?: string;
 };
 
 export function CauseWizard({
@@ -93,30 +95,36 @@ export function CauseWizard({
   defaultJurisdictions,
   initialTitle,
   initialKeywords,
+  initialOutcome,
+  initialStarterId,
 }: CauseWizardProps) {
   const router = useRouter();
-  const prefilled = Boolean(initialTitle && initialTitle.trim());
+  const initialStarter = initialStarterId
+    ? (STARTER_CAUSES.find((s) => s.id === initialStarterId) ?? null)
+    : null;
+  // A starter deep-link preselects the matching pick card. A free-form
+  // ?title=/?keywords= deep-link drops the user into the custom form.
+  const prefilledCustom =
+    !initialStarter && Boolean(initialTitle && initialTitle.trim());
   const [mode, setMode] = useState<"pick" | "custom">(
-    prefilled ? "custom" : "pick",
+    prefilledCustom ? "custom" : "pick",
   );
-  const [picked, setPicked] = useState<StarterCause | null>(null);
+  const [picked, setPicked] = useState<StarterCause | null>(initialStarter);
   const [customTitle, setCustomTitle] = useState(initialTitle?.trim() ?? "");
+  // Don't seed the outcome from the title — they are different fields and
+  // copying the title into the outcome produces a nonsense default.
   const [customOutcome, setCustomOutcome] = useState(
-    prefilled ? (initialTitle ?? "").trim() : "",
+    initialOutcome?.trim() ?? "",
   );
   const [customKeywords, setCustomKeywords] = useState(
     initialKeywords?.trim() ?? "",
   );
   const [jurisdictions, setJurisdictions] = useState<string[]>(
-    defaultJurisdictions,
+    () => defaultJurisdictions,
   );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [jurInput, setJurInput] = useState("");
-
-  useEffect(() => {
-    setJurisdictions(defaultJurisdictions);
-  }, [defaultJurisdictions]);
 
   const overlap = useMemo<OverlapHit[]>(() => {
     if (mode === "pick") {
@@ -158,6 +166,28 @@ export function CauseWizard({
 
   function removeJurisdiction(value: string) {
     setJurisdictions(jurisdictions.filter((j) => j !== value));
+  }
+
+  function hasCustomDraft(): boolean {
+    return Boolean(
+      customTitle.trim() ||
+        customOutcome.trim() ||
+        customKeywords.trim() ||
+        jurInput.trim(),
+    );
+  }
+
+  function handleCancel() {
+    // Only the custom form holds free-typed text worth guarding. In pick mode
+    // a stray jurisdiction-input value is the only unsaved text.
+    const dirty = mode === "custom" ? hasCustomDraft() : Boolean(jurInput.trim());
+    if (
+      dirty &&
+      !window.confirm("Discard this cause? Your unsaved changes will be lost.")
+    ) {
+      return;
+    }
+    router.push("/causes");
   }
 
   async function submit() {
@@ -212,7 +242,17 @@ export function CauseWizard({
 
     setSubmitting(true);
     try {
-      const causes = [...existing, candidate];
+      // Re-fetch the current causes right before merging. The `existing` prop
+      // was server-rendered when this page loaded; another tab may have added
+      // or edited causes since. Merging into the live list avoids clobbering
+      // those concurrent changes.
+      const latest = await fetch("/api/causes")
+        .then((r) => r.json())
+        .catch(() => ({}));
+      const liveCauses: ExistingCause[] = Array.isArray(latest?.data?.causes)
+        ? latest.data.causes
+        : existing;
+      const causes = [...liveCauses, candidate];
       const res = await fetch("/api/causes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -226,7 +266,12 @@ export function CauseWizard({
         setSubmitting(false);
         return;
       }
-      window.localStorage.setItem("btpftp-causes", JSON.stringify(causes));
+      try {
+        window.localStorage.setItem("btpftp-causes", JSON.stringify(causes));
+      } catch {
+        // localStorage can throw in private mode or over quota; the cause is
+        // already persisted server-side via the cookie, so ignore.
+      }
       router.push(`/causes/${candidate.id}`);
       router.refresh();
     } catch (err) {
@@ -241,6 +286,7 @@ export function CauseWizard({
         <button
           type="button"
           onClick={() => setMode("pick")}
+          aria-pressed={mode === "pick"}
           className={
             mode === "pick"
               ? "rounded-full border border-civic-500 bg-civic-50 px-3 py-1.5 text-sm font-semibold text-civic-700"
@@ -252,6 +298,7 @@ export function CauseWizard({
         <button
           type="button"
           onClick={() => setMode("custom")}
+          aria-pressed={mode === "custom"}
           className={
             mode === "custom"
               ? "rounded-full border border-civic-500 bg-civic-50 px-3 py-1.5 text-sm font-semibold text-civic-700"
@@ -463,12 +510,13 @@ export function CauseWizard({
             </>
           )}
         </button>
-        <Link
-          href="/causes"
+        <button
+          type="button"
+          onClick={handleCancel}
           className="text-sm font-semibold text-ink-700 hover:text-civic-700"
         >
           Cancel
-        </Link>
+        </button>
       </div>
     </div>
   );

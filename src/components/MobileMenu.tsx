@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 
 type NavItem = { href: string; label: string };
 
@@ -16,30 +17,27 @@ type MobileMenuProps = {
 export function MobileMenu({ items, trustLinks }: MobileMenuProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname() ?? "/";
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
     return () => {
-      document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
   }, [open]);
 
+  // Moves focus into the panel on open, traps Tab, closes on Escape, and
+  // restores focus to the menu trigger on close.
+  useFocusTrap(panelRef, { active: open, onClose: () => setOpen(false) });
+
   function close() {
     setOpen(false);
-    setTimeout(() => triggerRef.current?.focus(), 10);
   }
 
   return (
     <>
       <button
-        ref={triggerRef}
         type="button"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
@@ -51,7 +49,9 @@ export function MobileMenu({ items, trustLinks }: MobileMenuProps) {
       </button>
       {open ? (
         <div
-          className="fixed inset-0 z-50 flex flex-col bg-paper-50 md:hidden"
+          ref={panelRef}
+          tabIndex={-1}
+          className="fixed inset-0 z-50 flex flex-col bg-paper-50 outline-none md:hidden"
           role="dialog"
           aria-modal="true"
           aria-label="Site navigation"

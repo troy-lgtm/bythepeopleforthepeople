@@ -64,7 +64,7 @@ export async function YourReps() {
         </div>
         <PlacePicker
           currentZip={place.zip}
-          currentLabel={`${place.city} ${place.zip}`}
+          currentLabel={`${place.city}, ${place.state} ${place.zip}`}
         />
       </div>
 

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import type { SourceType } from "@/data/types";
 import {
   CalendarClock,
   FileSearch,
@@ -10,7 +11,7 @@ import {
 import { AskRecord } from "@/components/AskRecord";
 import { BillTimeline } from "@/components/BillTimeline";
 import { EvidenceStack } from "@/components/EvidenceStack";
-import { ImpactCards } from "@/components/ImpactCards";
+import { ImpactCards, type ImpactCardItem } from "@/components/ImpactCards";
 import { MissingDataPanel } from "@/components/MissingDataPanel";
 import { PageShell } from "@/components/PageShell";
 import { RecordAccessWorkbench } from "@/components/RecordAccessWorkbench";
@@ -18,7 +19,7 @@ import { RecordPageNav } from "@/components/RecordPageNav";
 import { RecordQuestionCard } from "@/components/RecordQuestionCard";
 import { SectionHeader } from "@/components/SectionHeader";
 import { ShareRecordCard } from "@/components/ShareRecordCard";
-import { SourceTrail } from "@/components/SourceTrail";
+import { SourceTrail, sourceTypeLabel } from "@/components/SourceTrail";
 import { JsonLd } from "@/components/JsonLd";
 import { PlainLanguageCallout } from "@/components/PlainLanguageCallout";
 import { ReportCorrection } from "@/components/ReportCorrection";
@@ -100,14 +101,90 @@ export default async function LocalDecisionPage({ params }: LocalPageProps) {
     notFound();
   }
 
-  const actionSources = getSourcesByIds(["src-la-cf-22-0617-actions"]);
-  const motionSources = getSourcesByIds([
-    "src-la-cf-22-0617",
-    "src-la-cf-22-0617-planning-report",
-  ]);
-  const commentSources = getSourcesByIds(["src-la-cf-22-0617-community-impact"]);
-  const recordFilter = (record: { recordId: string }) =>
-    record.recordId === "la-220617" || record.recordId === "global";
+  const dedupe = (ids: string[]) => Array.from(new Set(ids));
+  const byType = (...types: SourceType[]) =>
+    decision.sources
+      .filter((source) => types.includes(source.type))
+      .map((source) => source.id);
+
+  // Action-history sources from the decision's own records, falling back to the
+  // sources its timeline events cite, then to the whole source trail.
+  const actionSourceIds = byType("action_history");
+  const actionSources = getSourcesByIds(
+    actionSourceIds.length
+      ? actionSourceIds
+      : dedupe(decision.timeline.flatMap((event) => event.sourceIds)).length
+        ? dedupe(decision.timeline.flatMap((event) => event.sourceIds))
+        : decision.sources.map((source) => source.id),
+  );
+  // Motion sources: the council-file + staff-report records, or the full trail.
+  const motionSourceIds = byType("council_file", "staff_report");
+  const motionSources = getSourcesByIds(
+    motionSourceIds.length
+      ? motionSourceIds
+      : decision.sources.map((source) => source.id),
+  );
+  // Public-comment sources from the decision's own filing records.
+  const commentSourceIds = byType("public_comment", "public_filing");
+  const commentSources = getSourcesByIds(commentSourceIds);
+  // First council-file/source record, used for the "at a glance" trail and gaps.
+  const primarySource =
+    decision.sources.find((source) => source.type === "council_file") ??
+    decision.sources[0];
+  const primarySources = getSourcesByIds(
+    primarySource ? [primarySource.id] : [],
+  );
+
+  // Keep record-loop rows that share a source with this decision plus global rows.
+  const decisionSourceIds = new Set(decision.sources.map((source) => source.id));
+  const recordFilter = (record: { recordId: string; sourceIds: string[] }) =>
+    record.recordId === "global" ||
+    record.sourceIds.some((sourceId) => decisionSourceIds.has(sourceId));
+
+  // Claim-proof evidence for this decision: evidence rows whose source belongs
+  // to this decision's source trail.
+  const decisionEvidence = sourceEvidence.filter((item) =>
+    decisionSourceIds.has(item.sourceId),
+  );
+
+  // "Which documents prove it?" answer derived from the decision's documents.
+  const whichDocumentsAnswer = decision.relatedDocuments.length
+    ? `The file links ${decision.relatedDocuments
+        .map((source) => sourceTypeLabel(source.type).toLowerCase())
+        .filter((label, index, all) => all.indexOf(label) === index)
+        .join(", ")} records.`
+    : "Related documents for this record are being indexed.";
+
+  // Procedural impact cards tied to this decision's records.
+  const committeeActionSourceIds = byType("action_history", "committee_action");
+  const impactCards: ImpactCardItem[] = [
+    {
+      title: "Record effect",
+      body: decision.motionSummary,
+      sourceIds: motionSourceIds.length ? motionSourceIds : motionSources.map((s) => s.id),
+    },
+    {
+      title: "Procedural effect",
+      body: `The file records ${decision.status.toLowerCase()} status rather than an open pending vote. ${decision.nextProceduralStep}`,
+      sourceIds: committeeActionSourceIds.length
+        ? committeeActionSourceIds
+        : actionSources.map((s) => s.id),
+    },
+    {
+      title: "Watch next",
+      body: decision.nextProceduralStep,
+      sourceIds: motionSourceIds.length ? motionSourceIds : motionSources.map((s) => s.id),
+    },
+  ];
+
+  // "Who voted?" answer derived from the decision's own vote records.
+  const decisionVoteWithCounts = decision.votes.find(
+    (vote) => vote.yes !== null || vote.no !== null,
+  );
+  const whoVotedAnswer = decisionVoteWithCounts
+    ? `${decisionVoteWithCounts.chamberOrBody} ${decisionVoteWithCounts.motion}: ${decisionVoteWithCounts.yes ?? 0} yes, ${decisionVoteWithCounts.no ?? 0} no.`
+    : decision.votes[0]?.note ??
+      "The indexed report records the action but does not expose member-level vote counts in this extract.";
 
   return (
     <PageShell>
@@ -173,7 +250,7 @@ export default async function LocalDecisionPage({ params }: LocalPageProps) {
                 <Fact label="What happens next" value={decision.nextProceduralStep} />
               </dl>
               <div className="mt-5 border-t border-record-200 pt-4">
-                <SourceTrail sources={getSourcesByIds(["src-la-cf-22-0617"])} compact />
+                <SourceTrail sources={primarySources} compact />
               </div>
             </div>
           </div>
@@ -214,7 +291,7 @@ export default async function LocalDecisionPage({ params }: LocalPageProps) {
           <RecordQuestionCard
             icon={Vote}
             question="Who voted?"
-            answer="The indexed City Clerk report records adoption and final action but does not expose member-level vote counts in this extract."
+            answer={whoVotedAnswer}
             sources={actionSources}
           />
           <RecordQuestionCard
@@ -226,14 +303,14 @@ export default async function LocalDecisionPage({ params }: LocalPageProps) {
           <RecordQuestionCard
             icon={FileSearch}
             question="Which documents prove it?"
-            answer="The file links the council record, committee agenda, meeting minutes, staff report, and public comment packet."
+            answer={whichDocumentsAnswer}
             sources={decision.sources.slice(0, 3)}
           />
           <RecordQuestionCard
             icon={FileSearch}
             question="What is missing?"
             answer="Underlying attachments and member-level vote details are not indexed yet; the page labels those gaps instead of guessing."
-            sources={getSourcesByIds(["src-la-cf-22-0617"])}
+            sources={primarySources}
           />
         </div>
       </section>
@@ -255,16 +332,7 @@ export default async function LocalDecisionPage({ params }: LocalPageProps) {
                 description="The local summary keeps adoption, final action, file scope, and public-comment gaps separate."
               />
               <div className="mt-5">
-                <EvidenceStack
-                  evidence={sourceEvidence.filter((item) =>
-                    [
-                      "evidence-la-final-action",
-                      "evidence-la-incorporated",
-                      "evidence-la-comments",
-                    ].includes(item.id),
-                  )}
-                  compact
-                />
+                <EvidenceStack evidence={decisionEvidence} compact />
               </div>
             </section>
           </div>
@@ -284,9 +352,9 @@ export default async function LocalDecisionPage({ params }: LocalPageProps) {
               contactUrl: decision.contactUrl,
               contactEmail: decision.contactEmail,
               publicCommentUrl: decision.publicCommentUrl,
-              cpraEntity: "Los Angeles City Clerk",
+              cpraEntity: decision.jurisdiction,
               cpraScope:
-                "all communications, attachments, staff reports, community impact statements, and related correspondence",
+                "all communications, attachments, staff reports, public comment filings, and related correspondence",
             }}
           />
         </div>
@@ -306,7 +374,7 @@ export default async function LocalDecisionPage({ params }: LocalPageProps) {
           description="The page explains record posture in neutral procedural language and keeps the source trail attached."
         />
         <div className="mt-8">
-          <ImpactCards variant="local" />
+          <ImpactCards cards={impactCards} />
         </div>
       </section>
 
@@ -349,7 +417,10 @@ export default async function LocalDecisionPage({ params }: LocalPageProps) {
         <article className="rounded-lg border border-record-200 bg-white p-5 shadow-line">
           <p className="text-base leading-7 text-ink-700">{decision.publicCommentSummary}</p>
           <div className="mt-5">
-            <SourceTrail sources={getSourcesByIds(["src-la-cf-22-0617-community-impact"])} compact />
+            <SourceTrail
+              sources={commentSources.length ? commentSources : primarySources}
+              compact
+            />
           </div>
         </article>
       </section>

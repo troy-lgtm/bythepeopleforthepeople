@@ -5,15 +5,20 @@ export function toCsv(rows: Array<Record<string, unknown>>): string {
   );
   const escape = (value: unknown): string => {
     if (value === null || value === undefined) return "";
-    const str = typeof value === "string" ? value : JSON.stringify(value);
+    let str = typeof value === "string" ? value : JSON.stringify(value);
+    // CSV formula-injection defense: spreadsheets treat a leading =, +, -, @,
+    // tab, or CR as a formula trigger. Prefix with a single quote to neutralize.
+    if (/^[=+\-@\t\r]/.test(str)) {
+      str = `'${str}`;
+    }
     if (/[",\n\r]/.test(str)) {
       return `"${str.replace(/"/g, '""')}"`;
     }
     return str;
   };
   const lines = [
-    headers.join(","),
+    headers.map((h) => escape(h)).join(","),
     ...rows.map((r) => headers.map((h) => escape(r[h])).join(",")),
   ];
-  return lines.join("\n");
+  return lines.join("\r\n");
 }
