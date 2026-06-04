@@ -15,7 +15,7 @@ test.describe("Critical-path smoke", () => {
   test("universal search modal opens and finds Schiff", async ({ page }) => {
     await page.goto("/");
     await page
-      .getByRole("button", { name: /Search records|Search ⌘K/i })
+      .getByRole("button", { name: /^search$/i })
       .first()
       .click();
     const input = page.getByRole("combobox", { name: /search records/i });

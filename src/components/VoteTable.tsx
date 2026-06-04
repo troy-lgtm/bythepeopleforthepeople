@@ -133,6 +133,7 @@ function VoteCount({
 }) {
   return (
     <div
+      role="img"
       className="rounded-lg border border-record-200 bg-paper-50 px-3 py-2"
       aria-label={`${fullLabel ?? label}: ${value ?? "not available"}`}
     >

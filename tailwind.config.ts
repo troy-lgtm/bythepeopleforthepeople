@@ -36,7 +36,8 @@ const config: Config = {
         notice: {
           50: "#fff8eb",
           100: "#f5e7c9",
-          500: "#a26f19",
+          // Darkened from #a26f19 to clear WCAG AA (4.5:1) as text on white/notice-50.
+          500: "#8a5d12",
         },
       },
       boxShadow: {
