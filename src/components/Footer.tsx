@@ -30,6 +30,12 @@ export function Footer() {
             <Link href="/near-me" className="hover:text-civic-700">
               Near me
             </Link>
+            <Link href="/today" className="hover:text-civic-700">
+              What moved today
+            </Link>
+            <Link href="/wrapped" className="hover:text-civic-700">
+              Your civic wrapped
+            </Link>
             <Link href="/activity" className="hover:text-civic-700">
               Upcoming and recent
             </Link>

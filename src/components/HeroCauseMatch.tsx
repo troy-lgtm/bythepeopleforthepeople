@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Loader2 } from "lucide-react";
+import { track } from "@/lib/analytics";
 import { STARTER_CAUSES } from "@/data/starter-causes";
 
 type PreviewHit = { type: "bill" | "local" | "topic"; title: string; href: string };
@@ -85,6 +86,7 @@ export function HeroCauseMatch() {
       } catch {
         /* ignore */
       }
+      track("cause_created", { source: "hero" });
       window.location.assign(`/causes/${id}`);
     } catch {
       setCreating(false);

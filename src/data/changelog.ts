@@ -9,6 +9,13 @@ export const changelog: ChangelogEntry[] = [
   {
     date: "2026-06-04",
     kind: "product",
+    title: "Civic Wrapped, “what moved” feed, and privacy-first analytics",
+    body:
+      "Three more on-brand growth surfaces. Civic Wrapped (/wrapped) turns your tracked causes into a shareable personal recap — causes tracked, records connected, how many moved, top topics — as a 1200×630 + 1080×1920 card; the shared link carries the stats so it unfurls and recipients can make their own. /today is a public, shareable “what moved in the public record” feed (the latest indexed changes, every item sourced) with its own summary card — honest, never breaking-news speculation. And privacy-respecting analytics (Plausible, no cookies/PII) now instrument the viral loop: share, cause_created, and subscribe events fire from the real actions, so the loop can finally be measured. All numbers are real; nothing fabricated. Reachable from the home feed, causes page, and footer.",
+  },
+  {
+    date: "2026-06-04",
+    kind: "product",
     title: "Shareable “your government” card — a postable civic snapshot",
     body:
       "A viral artifact that stays nonpartisan. Every ZIP now has a public page at /gov/<zip> showing who represents you and the records affecting your area, with a share-ready card — a 1200×630 social image and a 1080×1920 vertical/story image rendered from real data (your senators, House member by district, indexed-record count). Native share sheet on mobile, plus copy/Tweet/Bluesky. An honest local social-proof line shows the real number of subscribers near you (or invites you to be the first) — never a fabricated count. These per-ZIP pages are indexed (new sitemap section) so they double as answer pages for “who represents me.” Reachable from /near-me. No outrage, no scoring — just true, personal, sourced facts made easy to post.",

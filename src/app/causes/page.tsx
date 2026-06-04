@@ -39,6 +39,14 @@ export default async function CausesIndexPage() {
             >
               Browse starter causes
             </Link>
+            {causes.length > 0 ? (
+              <Link
+                href="/wrapped"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-md border border-civic-100 bg-civic-50 px-5 text-sm font-semibold text-civic-700 hover:border-civic-500"
+              >
+                Your civic wrapped →
+              </Link>
+            ) : null}
           </div>
         </div>
       </section>

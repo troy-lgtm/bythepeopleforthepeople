@@ -2,14 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { Check, Copy, Download, Send, Share2 } from "lucide-react";
+import { track } from "@/lib/analytics";
 
 type Props = {
   shareUrl: string;
   text: string;
   storyUrl: string;
+  surface?: string;
 };
 
-export function GovCardShare({ shareUrl, text, storyUrl }: Props) {
+export function GovCardShare({
+  shareUrl,
+  text,
+  storyUrl,
+  surface = "gov",
+}: Props) {
   const [canShare, setCanShare] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -20,6 +27,7 @@ export function GovCardShare({ shareUrl, text, storyUrl }: Props) {
   async function nativeShare() {
     try {
       await navigator.share({ text, url: shareUrl });
+      track("share", { surface, method: "native" });
     } catch {
       /* cancelled / unsupported */
     }
@@ -29,6 +37,7 @@ export function GovCardShare({ shareUrl, text, storyUrl }: Props) {
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
+      track("share", { surface, method: "copy" });
       setTimeout(() => setCopied(false), 2000);
     } catch {
       /* ignore */
@@ -72,6 +81,7 @@ export function GovCardShare({ shareUrl, text, storyUrl }: Props) {
           href={storyUrl}
           target="_blank"
           rel="noreferrer"
+          onClick={() => track("share", { surface, method: "story" })}
           className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-record-200 bg-white px-3 text-sm font-semibold text-ink-900 transition hover:border-civic-500"
         >
           <Download className="h-4 w-4" aria-hidden="true" />
@@ -81,6 +91,7 @@ export function GovCardShare({ shareUrl, text, storyUrl }: Props) {
           href={tweet}
           target="_blank"
           rel="noreferrer"
+          onClick={() => track("share", { surface, method: "tweet" })}
           className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-record-200 bg-white px-3 text-sm font-semibold text-ink-900 transition hover:border-civic-500"
         >
           <Send className="h-4 w-4" aria-hidden="true" />
@@ -90,6 +101,7 @@ export function GovCardShare({ shareUrl, text, storyUrl }: Props) {
           href={bsky}
           target="_blank"
           rel="noreferrer"
+          onClick={() => track("share", { surface, method: "bluesky" })}
           className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-record-200 bg-white px-3 text-sm font-semibold text-ink-900 transition hover:border-civic-500"
         >
           Bluesky
