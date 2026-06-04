@@ -7,6 +7,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-06-04",
+    kind: "product",
+    title: "Shareable “your government” card — a postable civic snapshot",
+    body:
+      "A viral artifact that stays nonpartisan. Every ZIP now has a public page at /gov/<zip> showing who represents you and the records affecting your area, with a share-ready card — a 1200×630 social image and a 1080×1920 vertical/story image rendered from real data (your senators, House member by district, indexed-record count). Native share sheet on mobile, plus copy/Tweet/Bluesky. An honest local social-proof line shows the real number of subscribers near you (or invites you to be the first) — never a fabricated count. These per-ZIP pages are indexed (new sitemap section) so they double as answer pages for “who represents me.” Reachable from /near-me. No outrage, no scoring — just true, personal, sourced facts made easy to post.",
+  },
+  {
     date: "2026-05-30",
     kind: "product",
     title: "Polish v1: tighter home, subscribe-first digest, balanced desktop, one voice",

@@ -79,12 +79,12 @@ export async function GET(request: NextRequest) {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: 22,
+                fontSize: 24,
                 fontWeight: 800,
                 color: "#07111f",
               }}
             >
-              ★
+              B
             </div>
             <span style={{ fontSize: 18, fontWeight: 700 }}>
               By The People, For The People
@@ -240,7 +240,7 @@ function Badge({ label, muted = false }: { label: string; muted?: boolean }) {
   return (
     <span
       style={{
-        display: "inline-flex",
+        display: "flex",
         alignItems: "center",
         padding: "8px 14px",
         borderRadius: 999,
