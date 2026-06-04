@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@/components/Analytics";
 import { JsonLd } from "@/components/JsonLd";
 import { organizationSchema, websiteSchema } from "@/lib/schema";
 import "./globals.css";
@@ -66,7 +67,6 @@ export const metadata: Metadata = {
     },
   },
   manifest: "/manifest.webmanifest",
-  themeColor: "#07111f",
   appleWebApp: {
     capable: true,
     title: "By The People",
@@ -95,6 +95,7 @@ export default function RootLayout({
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="font-sans antialiased">
         {children}
+        <Analytics />
         <JsonLd data={[websiteSchema(), organizationSchema()]} />
       </body>
     </html>

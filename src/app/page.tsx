@@ -74,6 +74,12 @@ export default async function Home() {
         <div className="mt-6">
           <DailyChangeDigest />
         </div>
+        <Link
+          href="/today"
+          className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-civic-700 hover:gap-2"
+        >
+          See everything that moved — and share it →
+        </Link>
       </section>
 
       {/* Trust + missing data */}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check, Loader2, Mail } from "lucide-react";
+import { track } from "@/lib/analytics";
 
 type Status =
   | { kind: "idle" }
@@ -42,6 +43,7 @@ export function SubscribeForm() {
         });
         return;
       }
+      track("subscribe", { cadence });
       setStatus(json.data?.status === "updated" ? { kind: "updated" } : { kind: "pending" });
     } catch {
       setStatus({ kind: "error", message: "Network error. Try again." });
