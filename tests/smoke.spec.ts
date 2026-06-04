@@ -5,11 +5,11 @@ test.describe("Critical-path smoke", () => {
     await page.goto("/");
     await expect(
       page.getByRole("heading", {
-        name: /Government accountability/i,
+        name: /what is your government/i,
         level: 1,
       }),
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: /Ask the record/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /ask the record/i })).toBeVisible();
   });
 
   test("universal search modal opens and finds Schiff", async ({ page }) => {
@@ -18,7 +18,7 @@ test.describe("Critical-path smoke", () => {
       .getByRole("button", { name: /Search records|Search ⌘K/i })
       .first()
       .click();
-    const input = page.getByLabel(/Universal search/i);
+    const input = page.getByRole("combobox", { name: /search records/i });
     await expect(input).toBeVisible();
     await input.fill("Schiff");
     await expect(

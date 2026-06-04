@@ -253,7 +253,7 @@ export function UniversalSearch({ className }: { className?: string }) {
                 autoComplete="off"
                 placeholder="Search records, representatives, places, topics..."
                 className="h-10 flex-1 bg-transparent text-base text-ink-950 outline-none placeholder:text-ink-600"
-                aria-label="Search civic records"
+                aria-label="Search records, representatives, places, and topics"
                 role="combobox"
                 aria-expanded={results.length > 0}
                 aria-controls={listboxId}
