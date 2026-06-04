@@ -9,6 +9,7 @@ const SECTIONS = [
   "sitemap-federal.xml",
   "sitemap-state.xml",
   "sitemap-city.xml",
+  "sitemap-gov.xml",
 ];
 
 export async function GET() {

@@ -7,6 +7,7 @@ import {
   Landmark,
   MapPinned,
   Phone,
+  Share2,
   ShieldCheck,
 } from "lucide-react";
 import { LocationAutocomplete } from "@/components/LocationAutocomplete";
@@ -59,6 +60,15 @@ export default async function NearMePage() {
               }
             />
           </div>
+          {place ? (
+            <Link
+              href={`/gov/${place.zip}`}
+              className="mt-4 inline-flex h-10 items-center gap-2 rounded-md border border-civic-100 bg-civic-50 px-4 text-sm font-semibold text-civic-700 transition hover:border-civic-500"
+            >
+              <Share2 className="h-4 w-4" aria-hidden="true" />
+              Get a shareable card of your government →
+            </Link>
+          ) : null}
         </div>
       </section>
 

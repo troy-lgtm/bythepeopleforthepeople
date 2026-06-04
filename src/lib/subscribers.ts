@@ -109,3 +109,15 @@ export async function markSent(email: string, when: string): Promise<void> {
   if (!sub) return;
   await upsertSubscriber({ ...sub, lastSentAt: when });
 }
+
+/**
+ * Real count of confirmed subscribers in a ZIP — for honest local social
+ * proof ("N people near you get updates"). Returns 0 when the store is
+ * unconfigured or no one has subscribed; callers must not invent a number.
+ */
+export async function countConfirmedByZip(zip: string): Promise<number> {
+  const trimmed = zip.trim();
+  if (!trimmed || !isStoreConfigured()) return 0;
+  const subs = await listConfirmed();
+  return subs.filter((s) => s.zip === trimmed).length;
+}
