@@ -5,6 +5,7 @@ import { PageShell } from "@/components/PageShell";
 import { SectionHeader } from "@/components/SectionHeader";
 import { matchCause, matchCount } from "@/lib/cause-matcher";
 import { readCauses } from "@/lib/causes";
+import { STARTER_CAUSES } from "@/data/starter-causes";
 
 export const metadata: Metadata = {
   title: "Your causes",
@@ -21,6 +22,7 @@ export default async function CausesIndexPage() {
       <section className="border-b border-record-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <SectionHeader
+            as="h1"
             eyebrow="Causes important to you"
             title="Track what actually matters to you, with proof."
             description="Pick something you care about. We surface the bills, votes, and officials behind it — and alert you when it moves. Nonpartisan; you decide what to make of each record."
@@ -77,7 +79,7 @@ export default async function CausesIndexPage() {
                 href="/causes/starters"
                 className="inline-flex h-11 items-center gap-2 rounded-md border border-record-200 bg-white px-4 text-sm font-semibold text-ink-900 hover:border-civic-500"
               >
-                Pick from 12 starter cards
+                Pick from {STARTER_CAUSES.length} starter cards
               </Link>
             </div>
           </article>

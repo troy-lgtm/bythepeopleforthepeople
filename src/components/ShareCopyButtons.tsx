@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Check, Copy, Send, Share2 } from "lucide-react";
+import { copyText } from "@/lib/clipboard";
 
 type ShareCopyButtonsProps = {
   shareUrl: string;
@@ -35,23 +36,26 @@ export function ShareCopyButtons({
   }
 
   async function copy(key: string, value: string) {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopyState((s) => ({ ...s, [key]: "copied" }));
-      setTimeout(
-        () => setCopyState((s) => ({ ...s, [key]: "idle" })),
-        2500,
-      );
-    } catch {
-      setCopyState((s) => ({ ...s, [key]: "error" }));
-    }
+    const ok = await copyText(value);
+    setCopyState((s) => ({ ...s, [key]: ok ? "copied" : "error" }));
+    // Reset both success and failure so the row returns to its idle label.
+    setTimeout(() => setCopyState((s) => ({ ...s, [key]: "idle" })), 2500);
   }
 
   const tweetIntent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
   const blueskyIntent = `https://bsky.app/intent/compose?text=${encodeURIComponent(tweetText)}`;
 
+  const announcement = Object.values(copyState).includes("copied")
+    ? "Copied to clipboard."
+    : Object.values(copyState).includes("error")
+      ? "Copy failed. Please copy manually."
+      : "";
+
   return (
     <div className="mt-5 grid gap-3">
+      <p className="sr-only" role="status" aria-live="polite">
+        {announcement}
+      </p>
       {canShare ? (
         <button
           type="button"

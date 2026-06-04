@@ -7,7 +7,7 @@ import { PageShell } from "@/components/PageShell";
 import { ReportCorrection } from "@/components/ReportCorrection";
 import { SectionHeader } from "@/components/SectionHeader";
 import { localDecisions } from "@/data/records";
-import { STATE_NAMES } from "@/data/states";
+import { jurisdictionState, STATE_NAMES } from "@/data/states";
 import { allCities, getCityBySlug } from "@/lib/cities";
 import { breadcrumbSchema } from "@/lib/schema";
 
@@ -62,8 +62,14 @@ export default async function CityPage({ params }: CityPageProps) {
 
   const stateName = STATE_NAMES[city.state] ?? city.state;
   const cityNameLower = city.name.toLowerCase();
-  const indexedFiles = localDecisions.filter((d) =>
-    d.jurisdiction.toLowerCase().includes(cityNameLower),
+  const cityAbbr = city.state.toUpperCase();
+  // Require both the city-name match AND that the jurisdiction resolves to this
+  // city's state, so a shared city name (e.g. "Springfield") cannot pull in a
+  // same-named jurisdiction from another state.
+  const indexedFiles = localDecisions.filter(
+    (d) =>
+      d.jurisdiction.toLowerCase().includes(cityNameLower) &&
+      jurisdictionState(d.jurisdiction) === cityAbbr,
   );
 
   return (
@@ -115,8 +121,8 @@ export default async function CityPage({ params }: CityPageProps) {
           <p className="mt-3 max-w-2xl text-base leading-7 text-ink-700">
             Source-anchored civic hub for {city.name}. Local council files,
             agendas, votes, and public-comment opportunities surface here as
-            the {city.name} adapter is enabled. Federal representatives for
-            {" "}{city.state} are indexed below.
+            the {city.name} adapter is enabled. For the federal delegation and
+            state-level records, open the {stateName} hub below.
           </p>
           {city.recordsPortal ? (
             <a

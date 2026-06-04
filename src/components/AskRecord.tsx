@@ -47,6 +47,7 @@ export function AskRecord({
             key={answer.id}
             type="button"
             onClick={() => setSelectedId(answer.id)}
+            aria-pressed={selectedAnswer.id === answer.id}
             className={
               selectedAnswer.id === answer.id
                 ? "rounded-full border border-civic-500 bg-civic-50 px-3 py-1.5 text-sm font-semibold text-civic-700"

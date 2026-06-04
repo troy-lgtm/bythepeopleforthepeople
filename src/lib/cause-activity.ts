@@ -30,7 +30,10 @@ export function buildCauseActivity(
   matches: CauseMatches,
   causeCreatedAt: string,
 ): CauseActivitySummary {
-  const createdDate = parseDate(causeCreatedAt) ?? new Date(0);
+  // Guard unparseable createdAt: fall back to "now" (treat as started today)
+  // rather than the epoch, which would inflate daysTracked to ~20000.
+  const createdDate = parseDate(causeCreatedAt) ?? new Date();
+  const createdDay = createdDate.toISOString().slice(0, 10);
   const events: CauseActivityEvent[] = [];
 
   for (const m of matches.bills) {
@@ -60,8 +63,12 @@ export function buildCauseActivity(
     });
   }
   for (const m of matches.topics) {
+    // Topics carry no movement date; stamp them with a stable, record-derived
+    // date (when tracking began) instead of a non-deterministic render-time
+    // new Date(). A topic dated at the creation day counts as "since you
+    // started" under the same inclusive boundary used for bills/locals.
     events.push({
-      date: new Date().toISOString().slice(0, 10),
+      date: createdDay,
       type: "topic",
       title: m.topic.name,
       href: `/topics/${m.topic.slug}`,

@@ -13,6 +13,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const count = url.searchParams.get("count") ?? "0";
+  const countNum = Number.parseInt(count, 10) || 0;
   const top = url.searchParams.get("top") ?? "";
   const date = url.searchParams.get("date") ?? "";
   const isStory = url.searchParams.get("format") === "story";
@@ -109,7 +110,7 @@ export async function GET(request: NextRequest) {
               marginTop: 16,
             }}
           >
-            {count} record{count === "1" ? "" : "s"} moved
+            {count} record{countNum === 1 ? "" : "s"} moved
           </span>
           {topText ? (
             <span

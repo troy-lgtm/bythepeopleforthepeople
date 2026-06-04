@@ -5,6 +5,7 @@ import { SectionHeader } from "@/components/SectionHeader";
 import { readCauses } from "@/lib/causes";
 import { readPlace } from "@/lib/place";
 import { STATE_NAMES } from "@/data/states";
+import { STARTER_CAUSES } from "@/data/starter-causes";
 
 export const metadata: Metadata = {
   title: "Add a cause",
@@ -14,11 +15,23 @@ export const metadata: Metadata = {
 };
 
 type NewCausePageProps = {
-  searchParams: Promise<{ title?: string; keywords?: string }>;
+  searchParams: Promise<{
+    title?: string;
+    keywords?: string;
+    starter?: string;
+  }>;
 };
 
 export default async function NewCausePage({ searchParams }: NewCausePageProps) {
-  const { title, keywords } = await searchParams;
+  const { title, keywords, starter } = await searchParams;
+  // A ?starter=<id> deep-link preselects the matching starter card and
+  // prefills its title + keywords; free-form ?title=/?keywords= still work.
+  const starterCause = starter
+    ? STARTER_CAUSES.find((s) => s.id === starter)
+    : undefined;
+  const initialTitle = title ?? starterCause?.title;
+  const initialKeywords = keywords ?? starterCause?.watchTermsAny.join(", ");
+  const initialOutcome = starterCause?.outcome;
   const place = await readPlace();
   const causes = await readCauses();
   const existing = causes.map((c) => ({
@@ -56,8 +69,10 @@ export default async function NewCausePage({ searchParams }: NewCausePageProps) 
         <CauseWizard
           existing={existing}
           defaultJurisdictions={defaultJurisdictions}
-          initialTitle={title}
-          initialKeywords={keywords}
+          initialTitle={initialTitle}
+          initialKeywords={initialKeywords}
+          initialOutcome={initialOutcome}
+          initialStarterId={starterCause?.id}
         />
       </section>
     </PageShell>

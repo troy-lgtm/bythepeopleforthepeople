@@ -12,12 +12,19 @@ export const metadata: Metadata = {
   alternates: { canonical: "/corrections" },
 };
 
+const BASELINE_ID = "cor-launch-baseline";
+
 export default function CorrectionsPage() {
+  const factualCorrections = corrections.filter(
+    (entry) => entry.id !== BASELINE_ID,
+  );
+
   return (
     <PageShell>
       <section className="border-b border-record-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <SectionHeader
+            as="h1"
             eyebrow="Corrections"
             title="Every fix posted publicly. Nothing silently deleted."
             description="When we get something wrong, we post the correction here with the date, the affected record, and what changed."
@@ -27,9 +34,11 @@ export default function CorrectionsPage() {
 
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <p className="mb-6 text-sm leading-6 text-ink-700">
-          {corrections.length} {corrections.length === 1 ? "entry" : "entries"}{" "}
-          since launch. Append-only log. To report a new correction, click
-          &ldquo;Report a correction&rdquo; on any record page or email{" "}
+          {factualCorrections.length === 0
+            ? "No factual corrections to date."
+            : `${factualCorrections.length} ${factualCorrections.length === 1 ? "correction" : "corrections"} since launch.`}{" "}
+          Append-only log. To report a new correction, click &ldquo;Report a
+          correction&rdquo; on any record page or email{" "}
           <a
             href="mailto:corrections@bythepeopleforthepeople.com"
             className="text-civic-700 underline"
@@ -38,6 +47,17 @@ export default function CorrectionsPage() {
           </a>
           .
         </p>
+
+        {factualCorrections.length === 0 ? (
+          <article className="mb-8 rounded-lg border border-record-200 bg-paper-50 p-6">
+            <p className="text-sm leading-6 text-ink-700">
+              No corrections to date. Nothing published has needed a factual fix
+              yet. When a correction lands, it is posted here in full — dated,
+              tied to the affected record, and never silently deleted. The
+              baseline note below records when this log went live.
+            </p>
+          </article>
+        ) : null}
 
         <ol className="grid gap-4">
           {corrections.map((entry) => (
@@ -50,6 +70,11 @@ export default function CorrectionsPage() {
                   <span className="rounded-full border border-civic-100 bg-civic-50 px-2.5 py-1 text-xs font-semibold text-civic-700">
                     {entry.reportedBy}
                   </span>
+                  {entry.id === BASELINE_ID ? (
+                    <span className="rounded-full border border-record-200 bg-paper-50 px-2.5 py-1 text-xs font-semibold text-ink-700">
+                      Baseline note
+                    </span>
+                  ) : null}
                   <Link
                     href={entry.recordHref}
                     className="text-xs font-semibold text-ink-700 hover:text-civic-700"

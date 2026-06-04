@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { ArrowRight, Plus, Save, X } from "lucide-react";
 import type { Cause } from "@/data/types";
+
+function sameList(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((v, i) => v === b[i]);
+}
 
 type CauseEditorProps = {
   cause: Cause;
@@ -25,8 +29,35 @@ export function CauseEditor({ cause }: CauseEditorProps) {
   const [emoji, setEmoji] = useState(cause.emoji ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const savedRef = useRef(false);
 
   useEffect(() => setError(null), [title, outcome, topics, jurisdictions, keywords]);
+
+  // Unsaved-changes detection: any field differs from the loaded cause, or
+  // there's text typed into an add-input that hasn't been committed yet.
+  const dirty =
+    title !== cause.title ||
+    outcome !== cause.outcome ||
+    emoji !== (cause.emoji ?? "") ||
+    !sameList(topics, cause.topics) ||
+    !sameList(jurisdictions, cause.jurisdictions) ||
+    !sameList(keywords, cause.watchTermsAny) ||
+    topicInput.trim() !== "" ||
+    jurInput.trim() !== "" ||
+    keywordInput.trim() !== "";
+
+  function handleCancel() {
+    if (
+      dirty &&
+      !savedRef.current &&
+      !window.confirm(
+        "Discard your changes to this cause? Unsaved edits will be lost.",
+      )
+    ) {
+      return;
+    }
+    router.push(`/causes/${cause.id}`);
+  }
 
   function addTo(setter: (xs: string[]) => void, current: string[], value: string, cap: number) {
     const v = value.trim();
@@ -34,6 +65,19 @@ export function CauseEditor({ cause }: CauseEditorProps) {
     if (current.length >= cap) return;
     if (current.some((x) => x.toLowerCase() === v.toLowerCase())) return;
     setter([...current, v]);
+  }
+
+  /**
+   * Commit a pending add-input value into a list, honoring the cap and
+   * case-insensitive dedupe. Returns the list unchanged when there's nothing
+   * to flush so typed-but-not-"Added" values aren't silently lost on save.
+   */
+  function flush(current: string[], pending: string, cap: number): string[] {
+    const v = pending.trim();
+    if (!v) return current;
+    if (current.length >= cap) return current;
+    if (current.some((x) => x.toLowerCase() === v.toLowerCase())) return current;
+    return [...current, v];
   }
 
   async function save() {
@@ -45,14 +89,32 @@ export function CauseEditor({ cause }: CauseEditorProps) {
       setError("Outcome must be at least 8 characters.");
       return;
     }
+    // Flush any text typed into an add-input but not yet "Added", and reflect
+    // it back into state so the UI matches what we save.
+    const finalTopics = flush(topics, topicInput, 20);
+    const finalJurisdictions = flush(jurisdictions, jurInput, 20);
+    const finalKeywords = flush(keywords, keywordInput, 40);
+    if (finalTopics !== topics) {
+      setTopics(finalTopics);
+      setTopicInput("");
+    }
+    if (finalJurisdictions !== jurisdictions) {
+      setJurisdictions(finalJurisdictions);
+      setJurInput("");
+    }
+    if (finalKeywords !== keywords) {
+      setKeywords(finalKeywords);
+      setKeywordInput("");
+    }
+    const nextEmoji = emoji.trim().slice(0, 8);
     const updated: Cause = {
       ...cause,
       title: title.trim().slice(0, 140),
       outcome: outcome.trim().slice(0, 600),
-      topics,
-      jurisdictions,
-      watchTermsAny: keywords,
-      emoji: emoji.trim().slice(0, 8) || cause.emoji,
+      topics: finalTopics,
+      jurisdictions: finalJurisdictions,
+      watchTermsAny: finalKeywords,
+      emoji: nextEmoji || undefined,
     };
     setBusy(true);
     try {
@@ -76,7 +138,13 @@ export function CauseEditor({ cause }: CauseEditorProps) {
         setBusy(false);
         return;
       }
-      window.localStorage.setItem("btpftp-causes", JSON.stringify(next));
+      try {
+        window.localStorage.setItem("btpftp-causes", JSON.stringify(next));
+      } catch {
+        // localStorage can throw in private mode or over quota; the cause is
+        // already persisted server-side via the cookie, so ignore.
+      }
+      savedRef.current = true;
       router.push(`/causes/${cause.id}`);
       router.refresh();
     } catch (err) {
@@ -181,12 +249,13 @@ export function CauseEditor({ cause }: CauseEditorProps) {
             </>
           )}
         </button>
-        <Link
-          href={`/causes/${cause.id}`}
+        <button
+          type="button"
+          onClick={handleCancel}
           className="text-sm font-semibold text-ink-700 hover:text-civic-700"
         >
           Cancel
-        </Link>
+        </button>
       </div>
     </div>
   );
@@ -247,6 +316,7 @@ function TagList({
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           placeholder={placeholder}
+          aria-label={`Add ${label.toLowerCase()}`}
           className="h-10 flex-1 rounded-md border border-record-200 bg-paper-50 px-3 text-sm text-ink-950 outline-none focus:border-civic-500 focus:bg-white"
         />
         <button

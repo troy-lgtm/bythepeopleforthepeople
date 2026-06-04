@@ -59,9 +59,11 @@ export function sourceProvenanceLabel(source: SourceRecord) {
 
 function freshnessLabel(source: SourceRecord): string | null {
   if (!source.verifiedAt) return null;
-  const verified = new Date(source.verifiedAt);
-  if (Number.isNaN(verified.getTime())) return null;
-  return `Verified ${verified.toISOString().slice(0, 10)}`;
+  // Match a leading YYYY-MM-DD without constructing a Date, which would shift
+  // a date-only string across the local timezone boundary.
+  const match = source.verifiedAt.match(/^\d{4}-\d{2}-\d{2}/);
+  if (!match) return null;
+  return `Verified ${match[0]}`;
 }
 
 export function SourceTrail({ sources, compact = false }: SourceTrailProps) {
@@ -75,6 +77,7 @@ export function SourceTrail({ sources, compact = false }: SourceTrailProps) {
             href={source.url}
             target="_blank"
             rel="noreferrer"
+            aria-label={`${sourceTypeLabel(source.type)} — ${source.title} (opens official record)`}
             className={
               compact
                 ? "inline-flex items-center gap-1.5 rounded-full border border-record-200 bg-white px-2.5 py-1 text-xs font-medium text-ink-700 transition hover:border-civic-500 hover:text-civic-700"
@@ -115,7 +118,8 @@ export function SourceTrail({ sources, compact = false }: SourceTrailProps) {
                       </span>
                     ) : null}
                     {source.archiveUrl ? (
-                      <span className="rounded-full border border-record-200 bg-paper-50 px-2 py-0.5 underline">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-record-200 bg-paper-50 px-2 py-0.5">
+                        <History className="h-3 w-3" aria-hidden="true" />
                         Wayback snapshot available
                       </span>
                     ) : null}

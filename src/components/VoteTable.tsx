@@ -33,16 +33,27 @@ export function VoteTable({ votes }: VoteTableProps) {
               </h3>
               <p className="mt-1 text-sm text-ink-600">{vote.chamberOrBody}</p>
             </div>
-            <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
+            <div
+              className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4"
+              role="group"
+              aria-label={`Vote tally for ${vote.motion}`}
+            >
               <VoteCount label="Yes" value={vote.yes} />
               <VoteCount label="No" value={vote.no} />
               <VoteCount label="Abstain" value={vote.abstain} />
-              <VoteCount label="Absent" value={vote.absent} />
+              <VoteCount
+                label="NVR"
+                value={vote.absent}
+                fullLabel="No vote recorded"
+              />
             </div>
           </div>
           <div className="overflow-x-auto">
             {vote.members.length ? (
               <table className="min-w-full divide-y divide-record-200 text-left text-sm">
+                <caption className="sr-only">
+                  {`Member votes for ${vote.motion} (${vote.chamberOrBody}): ${vote.yes ?? 0} yes, ${vote.no ?? 0} no, ${vote.abstain ?? 0} abstain, ${vote.absent ?? 0} no vote recorded.`}
+                </caption>
                 <thead className="bg-paper-50 text-xs uppercase tracking-[0.14em] text-ink-600">
                   <tr>
                     <th scope="col" className="px-5 py-3 font-semibold">
@@ -57,14 +68,14 @@ export function VoteTable({ votes }: VoteTableProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-record-200 bg-white">
-                  {vote.members.map((member) => {
+                  {vote.members.map((member, index) => {
                     const memberHref = member.entitySlug
                       ? member.entitySlug.startsWith("/")
                         ? member.entitySlug
                         : `/people/${member.entitySlug}`
                       : null;
                     return (
-                      <tr key={`${vote.id}-${member.name}`}>
+                      <tr key={`${vote.id}-${index}-${member.name}`}>
                         <td className="px-5 py-3 font-medium text-ink-950">
                           {memberHref ? (
                             <Link
@@ -111,13 +122,26 @@ export function VoteTable({ votes }: VoteTableProps) {
   );
 }
 
-function VoteCount({ label, value }: { label: string; value: number | null }) {
+function VoteCount({
+  label,
+  value,
+  fullLabel,
+}: {
+  label: string;
+  value: number | null;
+  fullLabel?: string;
+}) {
   return (
-    <div className="rounded-lg border border-record-200 bg-paper-50 px-3 py-2">
-      <div className="font-mono text-lg font-semibold text-ink-950">
+    <div
+      className="rounded-lg border border-record-200 bg-paper-50 px-3 py-2"
+      aria-label={`${fullLabel ?? label}: ${value ?? "not available"}`}
+    >
+      <div className="font-mono text-lg font-semibold text-ink-950" aria-hidden="true">
         {value ?? "n/a"}
       </div>
-      <div className="text-xs font-medium text-ink-600">{label}</div>
+      <div className="text-xs font-medium text-ink-600" aria-hidden="true">
+        {label}
+      </div>
     </div>
   );
 }

@@ -2,20 +2,22 @@ import { type NextRequest } from "next/server";
 import { jsonError, jsonOk } from "@/lib/api";
 import { readCauses } from "@/lib/causes";
 import { readPlace } from "@/lib/place";
-import { emailConfigured, sendEmail } from "@/lib/email";
+import { EMAIL_RE, emailConfigured, sendEmail } from "@/lib/email";
 import {
   type Cadence,
   type Subscriber,
   getSubscriber,
   isStoreConfigured,
   newToken,
+  rateLimit,
   upsertSubscriber,
 } from "@/lib/subscribers";
 
 export const dynamic = "force-dynamic";
 
 const BASE = "https://bythepeopleforthepeople.com";
-const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+const RL_MAX = 3;
+const RL_WINDOW_SECONDS = 60;
 
 export async function POST(request: NextRequest) {
   if (!isStoreConfigured()) {
@@ -40,6 +42,20 @@ export async function POST(request: NextRequest) {
       400,
       "consent_required",
       "Explicit consent is required to subscribe.",
+    );
+  }
+
+  // Best-effort rate limit per address (no-op when Redis is unconfigured).
+  const rl = await rateLimit(
+    `rl:subscribe:${body.email.toLowerCase()}`,
+    RL_MAX,
+    RL_WINDOW_SECONDS,
+  );
+  if (!rl.ok) {
+    return jsonError(
+      429,
+      "rate_limited",
+      "Too many subscribe attempts for this address. Try again in a minute.",
     );
   }
 

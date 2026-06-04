@@ -74,7 +74,7 @@ export default async function CauseDigestPage({ params }: Props) {
     ${localRows ? `<h2 style="font-size:14px;margin:18px 0 8px 0;border-bottom:1px solid #eceef4;padding-bottom:4px;">Local files matched</h2><ul style="margin:0;padding-left:18px;">${localRows}</ul>` : ""}
     ${topicRows ? `<h2 style="font-size:14px;margin:18px 0 8px 0;border-bottom:1px solid #eceef4;padding-bottom:4px;">Topics matched</h2><ul style="margin:0;padding-left:18px;">${topicRows}</ul>` : ""}
 
-    <p style="margin:24px 0 0 0;font-size:11px;color:#40516a;">This is a preview. Once digest delivery is configured (Resend), this cause sends on the schedule you choose. Methodology: source-anchored. No partisan scoring. You judge alignment.</p>
+    <p style="margin:24px 0 0 0;font-size:11px;color:#40516a;">This is a preview. Once digest delivery is configured (Resend), this cause sends on a daily or weekly cadence. Methodology: source-anchored. No partisan scoring. You judge alignment.</p>
   </div>
 </body></html>`;
 

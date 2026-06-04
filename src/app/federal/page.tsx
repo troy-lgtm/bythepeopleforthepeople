@@ -2,32 +2,18 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageShell } from "@/components/PageShell";
 import { SectionHeader } from "@/components/SectionHeader";
+import { STATE_NAMES } from "@/data/states";
 import { allFederalReps, repsByState, slugForRep } from "@/lib/federal-reps";
+
+const MEMBER_COUNT = allFederalReps().length;
 
 export const metadata: Metadata = {
   title: "Federal representatives",
-  description:
-    "All 536 current U.S. Congress members — source-anchored civic profiles indexed from the united-states/congress-legislators dataset.",
+  description: `All ${MEMBER_COUNT} current U.S. Congress members — source-anchored civic profiles indexed from the united-states/congress-legislators dataset.`,
   alternates: { canonical: "/federal" },
 };
 
 type SearchParams = Promise<{ state?: string }>;
-
-const STATE_NAMES: Record<string, string> = {
-  AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California",
-  CO: "Colorado", CT: "Connecticut", DE: "Delaware", DC: "District of Columbia",
-  FL: "Florida", GA: "Georgia", HI: "Hawaii", ID: "Idaho", IL: "Illinois",
-  IN: "Indiana", IA: "Iowa", KS: "Kansas", KY: "Kentucky", LA: "Louisiana",
-  ME: "Maine", MD: "Maryland", MA: "Massachusetts", MI: "Michigan", MN: "Minnesota",
-  MS: "Mississippi", MO: "Missouri", MT: "Montana", NE: "Nebraska", NV: "Nevada",
-  NH: "New Hampshire", NJ: "New Jersey", NM: "New Mexico", NY: "New York",
-  NC: "North Carolina", ND: "North Dakota", OH: "Ohio", OK: "Oklahoma",
-  OR: "Oregon", PA: "Pennsylvania", RI: "Rhode Island", SC: "South Carolina",
-  SD: "South Dakota", TN: "Tennessee", TX: "Texas", UT: "Utah", VT: "Vermont",
-  VA: "Virginia", WA: "Washington", WV: "West Virginia", WI: "Wisconsin",
-  WY: "Wyoming", AS: "American Samoa", GU: "Guam", MP: "Northern Mariana Islands",
-  PR: "Puerto Rico", VI: "U.S. Virgin Islands",
-};
 
 export default async function FederalIndexPage({
   searchParams,
@@ -47,6 +33,7 @@ export default async function FederalIndexPage({
       <section className="border-b border-record-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <SectionHeader
+            as="h1"
             eyebrow="Federal representatives"
             title={
               focusedState

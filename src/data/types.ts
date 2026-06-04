@@ -60,7 +60,7 @@ export type Cause = {
   watchTermsAny: string[];
   createdAt: string;
   emoji?: string;
-  digestCadence?: "daily" | "weekly" | "monthly";
+  digestCadence?: "daily" | "weekly";
 };
 
 export type CorrectionLog = {

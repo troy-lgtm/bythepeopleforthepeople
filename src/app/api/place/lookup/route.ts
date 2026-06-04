@@ -47,7 +47,17 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const body = (await request.json().catch(() => ({}))) as { zip?: string };
-  const resolved = body.zip ? await resolveZip(body.zip) : null;
+  if (!body.zip) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "zip_required",
+        message: "Provide a ZIP code in the request body.",
+      },
+      { status: 400 },
+    );
+  }
+  const resolved = await resolveZip(body.zip);
   if (!resolved) {
     return NextResponse.json(
       {

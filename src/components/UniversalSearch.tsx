@@ -1,10 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, X, ArrowRight, CornerDownLeft } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 
 type SearchDoc = {
   id: string;
@@ -79,23 +87,35 @@ export function UniversalSearch({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
   const [docs, setDocs] = useState<SearchDoc[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIdx, setActiveIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+
+  const titleId = useId();
+  const listboxId = useId();
+  const optionId = (i: number) => `${listboxId}-opt-${i}`;
 
   const close = useCallback(() => {
     setOpen(false);
-    setTimeout(() => triggerRef.current?.focus(), 10);
   }, []);
+
+  // Accessible dialog behavior: focus in/out, Tab trap, Escape, focus restore.
+  useFocusTrap(dialogRef, { active: open, onClose: close });
 
   // Lazy-load the search index + user's causes on first open
   useEffect(() => {
-    if (!open || docs || loading) return;
+    if (!open || docs || loading || fetchError) return;
     setLoading(true);
     Promise.all([
-      fetch("/api/search-index").then((r) => r.json()).catch(() => null),
-      fetch("/api/causes").then((r) => r.json()).catch(() => null),
+      fetch("/api/search-index").then((r) => {
+        if (!r.ok) throw new Error("index");
+        return r.json();
+      }),
+      // Causes are optional; a failure there should not fail the whole index.
+      fetch("/api/causes").then((r) => (r.ok ? r.json() : null)).catch(() => null),
     ])
       .then(([idx, causesResp]) => {
         const baseDocs: SearchDoc[] = Array.isArray(idx?.docs) ? idx.docs : [];
@@ -122,23 +142,21 @@ export function UniversalSearch({ className }: { className?: string }) {
         );
         setDocs([...causeDocs, ...baseDocs]);
       })
-      .catch(() => null)
+      .catch(() => setFetchError(true))
       .finally(() => setLoading(false));
-  }, [open, docs, loading]);
+  }, [open, docs, loading, fetchError]);
 
-  // Global Cmd/Ctrl+K
+  // Global Cmd/Ctrl+K. Escape close is handled by useFocusTrap while open.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.key === "k" || e.key === "K") && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setOpen((o) => !o);
-      } else if (e.key === "Escape" && open) {
-        close();
       }
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, close]);
+  }, []);
 
   // Open from the mobile bottom-nav Search tab.
   useEffect(() => {
@@ -211,11 +229,18 @@ export function UniversalSearch({ className }: { className?: string }) {
           onClick={(e) => {
             if (e.target === e.currentTarget) close();
           }}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="universal-search-title"
         >
-          <div className="w-full max-w-2xl overflow-hidden rounded-lg border border-record-200 bg-white shadow-panel">
+          <div
+            ref={dialogRef}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            className="w-full max-w-2xl overflow-hidden rounded-lg border border-record-200 bg-white shadow-panel outline-none"
+          >
+            <h2 id={titleId} className="sr-only">
+              Search civic records
+            </h2>
             <div className="flex items-center gap-3 border-b border-record-200 px-4 py-3">
               <Search className="h-5 w-5 text-ink-600" aria-hidden="true" />
               <input
@@ -228,13 +253,16 @@ export function UniversalSearch({ className }: { className?: string }) {
                 autoComplete="off"
                 placeholder="Search records, representatives, places, topics..."
                 className="h-10 flex-1 bg-transparent text-base text-ink-950 outline-none placeholder:text-ink-600"
-                aria-label="Universal search"
-                aria-describedby="universal-search-title"
+                aria-label="Search civic records"
+                role="combobox"
+                aria-expanded={results.length > 0}
+                aria-controls={listboxId}
+                aria-autocomplete="list"
+                aria-activedescendant={
+                  results.length > 0 ? optionId(activeIdx) : undefined
+                }
               />
-              <kbd
-                id="universal-search-title"
-                className="hidden rounded border border-record-200 bg-paper-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-ink-600 sm:inline"
-              >
+              <kbd className="hidden rounded border border-record-200 bg-paper-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-ink-600 sm:inline">
                 ESC
               </kbd>
               <button
@@ -248,7 +276,24 @@ export function UniversalSearch({ className }: { className?: string }) {
             </div>
 
             <div className="max-h-[60vh] overflow-y-auto" onKeyDown={onListKey}>
-              {!docs && loading ? (
+              {fetchError ? (
+                <div className="px-4 py-6 text-sm leading-6 text-ink-700">
+                  <p className="font-semibold text-ink-950">
+                    Couldn&apos;t load the search index.
+                  </p>
+                  <p className="mt-1 text-xs text-ink-600">
+                    The index didn&apos;t respond. Check your connection and try
+                    again.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setFetchError(false)}
+                    className="mt-3 inline-flex items-center gap-2 rounded-md border border-record-200 bg-paper-50 px-3 py-1.5 text-xs font-semibold text-ink-800 hover:border-civic-500"
+                  >
+                    Try again
+                  </button>
+                </div>
+              ) : !docs && loading ? (
                 <p className="px-4 py-6 text-sm text-ink-600">
                   Loading search index...
                 </p>
@@ -274,14 +319,19 @@ export function UniversalSearch({ className }: { className?: string }) {
                   </Link>
                 </div>
               ) : (
-                <ul role="listbox" className="grid">
+                <ul id={listboxId} role="listbox" className="grid">
                   {results.map((doc, idx) => (
-                    <li key={doc.id}>
+                    <li
+                      key={doc.id}
+                      id={optionId(idx)}
+                      role="option"
+                      aria-selected={activeIdx === idx}
+                    >
                       <Link
                         href={doc.href}
                         onClick={() => close()}
                         onMouseEnter={() => setActiveIdx(idx)}
-                        aria-selected={activeIdx === idx}
+                        tabIndex={-1}
                         className={cn(
                           "flex items-start gap-3 px-4 py-3 transition",
                           activeIdx === idx
@@ -321,7 +371,13 @@ export function UniversalSearch({ className }: { className?: string }) {
             </div>
 
             <div className="flex items-center justify-between border-t border-record-200 bg-paper-50 px-4 py-2 text-xs text-ink-600">
-              <span>{docs ? `${docs.length} indexed` : "Loading index"}</span>
+              <span>
+                {fetchError
+                  ? "Index unavailable"
+                  : docs
+                    ? `${docs.length} indexed`
+                    : "Loading index"}
+              </span>
               <span className="flex items-center gap-3">
                 <span className="inline-flex items-center gap-1">
                   <kbd className="rounded border border-record-200 bg-white px-1 py-0.5 font-mono text-[10px] font-semibold text-ink-700">

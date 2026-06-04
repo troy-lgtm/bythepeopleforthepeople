@@ -43,7 +43,10 @@ export function DecisionCard({
             {jurisdiction}
           </p>
           <h3 className="mt-2 text-lg font-semibold leading-7 text-ink-950">
-            <Link href={href} className="outline-none">
+            <Link
+              href={href}
+              className="rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-civic-500 focus-visible:ring-offset-2"
+            >
               {title}
             </Link>
           </h3>
@@ -59,7 +62,7 @@ export function DecisionCard({
           <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
           {date}
         </span>
-        {meta ? <span className="text-xs text-ink-600">- {meta}</span> : null}
+        {meta ? <span className="text-xs text-ink-600">· {meta}</span> : null}
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         {topics.map((topic) => (

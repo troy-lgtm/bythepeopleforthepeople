@@ -17,6 +17,7 @@ export default function WatchlistPage() {
       <section className="border-b border-record-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <SectionHeader
+            as="h1"
             eyebrow="Watchlist"
             title="The return loop: follow the public records that matter to you."
             description="A civic product becomes useful every day when it tells you what changed since the last visit and what to watch next."

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MapPin, X } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 
 type PlacePickerProps = {
   currentZip?: string | null;
@@ -22,28 +23,19 @@ export function PlacePicker({
   const [open, setOpen] = useState(false);
   const [zip, setZip] = useState(currentZip ?? "");
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
-  const firstFieldRef = useRef<HTMLInputElement | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    firstFieldRef.current?.focus();
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        close();
-      }
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [open]);
-
-  function close() {
+  const close = useCallback(() => {
     setOpen(false);
     setError(null);
-    setTimeout(() => triggerRef.current?.focus(), 10);
-  }
+    setSubmitting(null);
+  }, []);
+
+  // Accessible dialog behavior: focus in/out, Tab trap, Escape, focus restore.
+  useFocusTrap(dialogRef, { active: open, onClose: close });
 
   async function submit(value: string) {
     setError(null);
@@ -52,34 +44,52 @@ export function PlacePicker({
       setError("Enter a 5-digit ZIP.");
       return;
     }
-    const res = await fetch("/api/place/lookup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ zip: trimmed }),
-    });
-    const json = (await res.json()) as
-      | { ok: true }
-      | { ok: false; error: string; message: string };
-    if (!json.ok) {
-      setError(json.message);
-      return;
+    setSubmitting(trimmed);
+    try {
+      const res = await fetch("/api/place/lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ zip: trimmed }),
+      });
+      const json = (await res.json()) as
+        | { ok: true }
+        | { ok: false; error: string; message: string };
+      if (!json.ok) {
+        setError(json.message);
+        setSubmitting(null);
+        return;
+      }
+      close();
+      startTransition(() => router.refresh());
+    } catch {
+      setError("Network error. Try again.");
+      setSubmitting(null);
     }
-    close();
-    startTransition(() => router.refresh());
   }
 
   async function clearPlace() {
-    await fetch("/api/place/lookup", { method: "DELETE" });
-    setZip("");
-    close();
-    startTransition(() => router.refresh());
+    setError(null);
+    setSubmitting("__clear__");
+    try {
+      const res = await fetch("/api/place/lookup", { method: "DELETE" });
+      if (!res.ok) {
+        setError("Could not clear your place. Try again.");
+        setSubmitting(null);
+        return;
+      }
+      setZip("");
+      close();
+      startTransition(() => router.refresh());
+    } catch {
+      setError("Network error. Try again.");
+      setSubmitting(null);
+    }
   }
 
   return (
     <>
       <button
         type="button"
-        ref={triggerRef}
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-expanded={open}
@@ -107,11 +117,15 @@ export function PlacePicker({
               close();
             }
           }}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="placepicker-title"
         >
-          <div className="w-full max-w-md rounded-lg border border-record-200 bg-white p-5 shadow-panel">
+          <div
+            ref={dialogRef}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="placepicker-title"
+            className="w-full max-w-md rounded-lg border border-record-200 bg-white p-5 shadow-panel outline-none"
+          >
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-civic-700">
@@ -150,7 +164,6 @@ export function PlacePicker({
                   ZIP code
                 </span>
                 <input
-                  ref={firstFieldRef}
                   value={zip}
                   onChange={(event) => setZip(event.target.value)}
                   inputMode="numeric"
@@ -163,40 +176,51 @@ export function PlacePicker({
                 />
               </label>
               {error ? (
-                <p className="rounded-md border border-notice-100 bg-notice-50 px-3 py-2 text-xs leading-5 text-notice-500">
+                <p
+                  role="alert"
+                  className="rounded-md border border-notice-100 bg-notice-50 px-3 py-2 text-xs leading-5 text-notice-500"
+                >
                   {error}
                 </p>
               ) : null}
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-600">
                   Try
                 </span>
-                {sampleZips.map((sample) => (
-                  <button
-                    key={sample}
-                    type="button"
-                    onClick={() => submit(sample)}
-                    className="rounded-full border border-record-200 bg-paper-50 px-2.5 py-0.5 text-xs font-semibold text-ink-700 hover:border-civic-500"
-                  >
-                    {sample}
-                  </button>
-                ))}
+                {sampleZips.map((sample) => {
+                  const isSubmitting = submitting === sample;
+                  return (
+                    <button
+                      key={sample}
+                      type="button"
+                      onClick={() => submit(sample)}
+                      disabled={submitting !== null}
+                      aria-busy={isSubmitting}
+                      className="rounded-full border border-record-200 bg-paper-50 px-2.5 py-0.5 text-xs font-semibold text-ink-700 hover:border-civic-500 disabled:opacity-60"
+                    >
+                      {isSubmitting ? `${sample}…` : sample}
+                    </button>
+                  );
+                })}
               </div>
               <div className="mt-2 flex flex-wrap gap-2">
                 <button
                   type="submit"
-                  disabled={pending}
+                  disabled={pending || submitting !== null}
                   className="inline-flex h-11 items-center justify-center rounded-md bg-ink-950 px-4 text-sm font-semibold text-white hover:bg-ink-800 disabled:opacity-60"
                 >
-                  {pending ? "Saving..." : "Save place"}
+                  {pending || (submitting && submitting !== "__clear__")
+                    ? "Saving..."
+                    : "Save place"}
                 </button>
                 {currentZip ? (
                   <button
                     type="button"
                     onClick={clearPlace}
-                    className="inline-flex h-11 items-center justify-center rounded-md border border-record-200 bg-white px-4 text-sm font-semibold text-ink-800 hover:border-civic-500"
+                    disabled={pending || submitting !== null}
+                    className="inline-flex h-11 items-center justify-center rounded-md border border-record-200 bg-white px-4 text-sm font-semibold text-ink-800 hover:border-civic-500 disabled:opacity-60"
                   >
-                    Clear
+                    {submitting === "__clear__" ? "Clearing..." : "Clear"}
                   </button>
                 ) : null}
               </div>

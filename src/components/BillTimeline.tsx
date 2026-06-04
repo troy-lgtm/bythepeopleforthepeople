@@ -7,8 +7,23 @@ type BillTimelineProps = {
 };
 
 export function BillTimeline({ events }: BillTimelineProps) {
+  if (!events.length) {
+    return (
+      <div className="rounded-lg border border-dashed border-record-200 bg-paper-50 p-6 text-sm leading-6 text-ink-700">
+        No timeline events are indexed for this record yet. Public-record events
+        will appear here as they are published and tied to a source.
+      </div>
+    );
+  }
+
+  // The connector line only makes sense when there is more than one event.
+  const connector =
+    events.length > 1
+      ? " before:absolute before:bottom-4 before:left-4 before:top-4 before:w-px before:bg-record-200"
+      : "";
+
   return (
-    <ol className="relative space-y-4 before:absolute before:bottom-4 before:left-4 before:top-4 before:w-px before:bg-record-200">
+    <ol className={`relative space-y-4${connector}`}>
       {events.map((event) => (
         <li key={event.id} className="relative grid gap-3 rounded-lg border border-record-200 bg-white p-4 pl-12 shadow-line">
           <span className="absolute left-[9px] top-5 h-3 w-3 rounded-full border-2 border-white bg-civic-600 shadow-line" />

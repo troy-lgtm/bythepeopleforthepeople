@@ -14,6 +14,7 @@ export default function PrivacyPage() {
       <section className="border-b border-record-200 bg-white">
         <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
           <SectionHeader
+            as="h1"
             eyebrow="Privacy"
             title="What we collect, what we never collect."
             description="A civic-trust product cannot survive surveillance practices. This is what we do and what we will not do."
@@ -43,8 +44,9 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong>Email subscriptions (opt-in):</strong> if you subscribe to
-            the digest, we store your email, your chosen cadence, and a snapshot
-            of your ZIP and causes so the digest can be personalized. Stored in
+            the digest, we store your email, your chosen cadence (daily or
+            weekly), and a snapshot of your ZIP and causes so the digest can be
+            personalized. Stored in
             a managed Redis store, used only to send the digest you asked for.
             Double opt-in: nothing is sent until you click the confirmation
             link. One-click unsubscribe in every email deletes all of it. Never
@@ -83,8 +85,9 @@ export default function PrivacyPage() {
           request to delete a correction submission you sent, or to ask what
           we know about you. Default position: we know your ZIP if you set it
           (visible to you in your own browser), an optional email if you gave
-          one on a correction submission, and your email plus cadence and a
-          ZIP/causes snapshot if you subscribed to the digest. Unsubscribe from
+          one on a correction submission, and your email plus your cadence
+          (daily or weekly) and a ZIP/causes snapshot if you subscribed to the
+          digest. Unsubscribe from
           any digest email to erase the subscription record entirely.
         </p>
 

@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 
 const CITATION =
@@ -25,6 +26,19 @@ export function jsonOk<T extends object>(
     response.headers.set("ETag", `"${init.etag}"`);
   }
   return response;
+}
+
+/**
+ * Constant-time string comparison. Guards against the timing side-channel a
+ * plain `===`/`!==` introduces when comparing secrets. Returns false fast on
+ * a length mismatch (length is not itself secret here) so timingSafeEqual is
+ * only handed equal-length buffers, as it requires.
+ */
+export function timingSafeEqualStr(a: string, b: string): boolean {
+  const bufA = Buffer.from(a, "utf8");
+  const bufB = Buffer.from(b, "utf8");
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
 }
 
 export function jsonError(

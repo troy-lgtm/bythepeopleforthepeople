@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AlertTriangle, X, CheckCircle2 } from "lucide-react";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 
 type ReportCorrectionProps = {
   recordHref: string;
@@ -13,6 +14,7 @@ export function ReportCorrection({
   recordTitle,
 }: ReportCorrectionProps) {
   const [open, setOpen] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [description, setDescription] = useState("");
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<
@@ -64,6 +66,8 @@ export function ReportCorrection({
     }
   }
 
+  useFocusTrap(dialogRef, { active: open, onClose: close });
+
   return (
     <>
       <button
@@ -83,14 +87,15 @@ export function ReportCorrection({
               close();
             }
           }}
-          onKeyDown={(event) => {
-            if (event.key === "Escape") close();
-          }}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="report-correction-title"
         >
-          <div className="w-full max-w-md rounded-lg border border-record-200 bg-white p-5 shadow-panel">
+          <div
+            ref={dialogRef}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="report-correction-title"
+            className="w-full max-w-md rounded-lg border border-record-200 bg-white p-5 shadow-panel outline-none"
+          >
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-civic-700">

@@ -2,6 +2,13 @@ import "server-only";
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
+/** Pragmatic email shape check: non-empty local + domain with a dot, no whitespace. */
+export const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+export function isEmail(value: unknown): value is string {
+  return typeof value === "string" && EMAIL_RE.test(value);
+}
+
 export function emailConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY);
 }

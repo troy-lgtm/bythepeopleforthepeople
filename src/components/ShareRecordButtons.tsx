@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import Link from "next/link";
 import { Share2, X } from "lucide-react";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 
 type ShareablePreset = {
   text: string;
@@ -23,6 +24,9 @@ export function ShareRecordButtons({
   presets,
 }: ShareRecordButtonsProps) {
   const [open, setOpen] = useState(false);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const close = useCallback(() => setOpen(false), []);
+  useFocusTrap(dialogRef, { active: open, onClose: close });
 
   function buildHref(preset: ShareablePreset): string {
     const params = new URLSearchParams({
@@ -50,16 +54,17 @@ export function ShareRecordButtons({
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-ink-950/60 p-4 sm:items-center"
           onClick={(e) => {
-            if (e.target === e.currentTarget) setOpen(false);
+            if (e.target === e.currentTarget) close();
           }}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") setOpen(false);
-          }}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="share-record-title"
         >
-          <div className="w-full max-w-xl overflow-hidden rounded-lg border border-record-200 bg-white shadow-panel">
+          <div
+            ref={dialogRef}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="share-record-title"
+            className="w-full max-w-xl overflow-hidden rounded-lg border border-record-200 bg-white shadow-panel outline-none"
+          >
             <div className="flex items-start justify-between gap-3 border-b border-record-200 px-5 py-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-civic-700">
@@ -78,7 +83,7 @@ export function ShareRecordButtons({
               </div>
               <button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={close}
                 className="-mr-2 -mt-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-ink-600 hover:bg-paper-50"
                 aria-label="Close"
               >
@@ -90,7 +95,7 @@ export function ShareRecordButtons({
                 <li key={idx}>
                   <Link
                     href={buildHref(preset)}
-                    onClick={() => setOpen(false)}
+                    onClick={close}
                     className="block px-5 py-4 transition hover:bg-paper-50"
                   >
                     <blockquote className="border-l-2 border-civic-500 pl-3 text-sm leading-6 text-ink-900">

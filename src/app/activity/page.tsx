@@ -21,6 +21,7 @@ export default function ActivityPage() {
       <section className="border-b border-record-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <SectionHeader
+            as="h1"
             eyebrow="Upcoming & recent"
             title="Next watch points before the activity stream."
             description="Future votes appear only when an official agenda, calendar, daily file, or vote notice is indexed. Recent events remain tied to dated source records."

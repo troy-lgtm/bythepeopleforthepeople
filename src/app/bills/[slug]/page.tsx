@@ -12,7 +12,7 @@ import { AmendmentDiff } from "@/components/AmendmentDiff";
 import { AskRecord } from "@/components/AskRecord";
 import { BillTimeline } from "@/components/BillTimeline";
 import { EvidenceStack } from "@/components/EvidenceStack";
-import { ImpactCards } from "@/components/ImpactCards";
+import { ImpactCards, type ImpactCardItem } from "@/components/ImpactCards";
 import { MissingDataPanel } from "@/components/MissingDataPanel";
 import { PageShell } from "@/components/PageShell";
 import { RecordAccessWorkbench } from "@/components/RecordAccessWorkbench";
@@ -20,7 +20,7 @@ import { RecordPageNav } from "@/components/RecordPageNav";
 import { RecordQuestionCard } from "@/components/RecordQuestionCard";
 import { SectionHeader } from "@/components/SectionHeader";
 import { ShareRecordCard } from "@/components/ShareRecordCard";
-import { SourceTrail } from "@/components/SourceTrail";
+import { SourceTrail, sourceTypeLabel } from "@/components/SourceTrail";
 import { JsonLd } from "@/components/JsonLd";
 import { PlainLanguageCallout } from "@/components/PlainLanguageCallout";
 import { ReportCorrection } from "@/components/ReportCorrection";
@@ -40,6 +40,7 @@ import {
   shareCards,
   sourceEvidence,
   sourceVerificationRecords,
+  topicProfiles,
   upcomingVoteChecks,
 } from "@/data/product-loop";
 
@@ -98,14 +99,161 @@ export default async function BillDetailPage({ params }: BillPageProps) {
     notFound();
   }
 
-  const amendmentSources = getSourcesByIds([
-    "src-sb79-compare",
-    "src-sb79-text",
-  ]);
-  const voteSources = getSourcesByIds(["src-sb79-votes"]);
-  const statusSources = getSourcesByIds(["src-sb79-status", "src-sb79-history"]);
-  const recordFilter = (record: { recordId: string }) =>
-    record.recordId === "sb79" || record.recordId === "global";
+  const dedupe = (ids: string[]) => Array.from(new Set(ids));
+  // Short name (e.g. "SB 79") derived from the bill title prefix.
+  const billShortName = bill.title.split(":")[0]?.trim() || bill.title;
+  // Sources behind "what changed" come from the bill's own amendments; if a bill
+  // has no amendments yet, fall back to its text/compare sources.
+  const amendmentSourceIds = dedupe(
+    bill.amendments.flatMap((amendment) => amendment.sourceIds),
+  );
+  const amendmentSources = getSourcesByIds(
+    amendmentSourceIds.length
+      ? amendmentSourceIds
+      : bill.sources
+          .filter(
+            (source) =>
+              source.type === "compare_versions" || source.type === "bill_text",
+          )
+          .map((source) => source.id),
+  );
+  // Vote sources come from the bill's own vote records.
+  const voteSources = getSourcesByIds(
+    dedupe(bill.votes.flatMap((vote) => vote.sourceIds)),
+  );
+  // Status/history sources: prefer the bill's status + history records, falling
+  // back to the late-stage timeline events that the status page documents.
+  const statusSourceIds = bill.sources
+    .filter(
+      (source) =>
+        source.type === "bill_status" || source.type === "bill_history",
+    )
+    .map((source) => source.id);
+  const statusSources = getSourcesByIds(
+    statusSourceIds.length
+      ? statusSourceIds
+      : dedupe(bill.timeline.flatMap((event) => event.sourceIds)),
+  );
+  const billStatusSources = getSourcesByIds(
+    bill.sources
+      .filter((source) => source.type === "bill_status")
+      .map((source) => source.id),
+  );
+  // "What is missing?" proof: version-comparison + status records from the bill.
+  const missingProofSources = getSourcesByIds(
+    dedupe([
+      ...bill.sources
+        .filter((source) => source.type === "compare_versions")
+        .map((source) => source.id),
+      ...bill.sources
+        .filter((source) => source.type === "bill_status")
+        .map((source) => source.id),
+    ]),
+  );
+  // The record-loop arrays are keyed by a short record id and a sourceIds list.
+  // Instead of hardcoding the SB79 record key, keep rows that share a source
+  // with this bill (its own data) plus any global rows.
+  const billSourceIds = new Set(bill.sources.map((source) => source.id));
+  // Claim-proof evidence for this bill: evidence rows whose underlying source is
+  // part of this bill's source trail.
+  const billEvidence = sourceEvidence.filter((item) =>
+    billSourceIds.has(item.sourceId),
+  );
+  const recordFilter = (record: { recordId: string; sourceIds: string[] }) =>
+    record.recordId === "global" ||
+    record.sourceIds.some((sourceId) => billSourceIds.has(sourceId));
+
+  // "Who voted?" answer derived from the bill's own vote records.
+  const votesWithCounts = bill.votes.filter(
+    (vote) => vote.yes !== null || vote.no !== null,
+  );
+  const whoVotedAnswer = votesWithCounts.length
+    ? votesWithCounts
+        .map((vote) => {
+          const parts = [`${vote.chamberOrBody} ${vote.motion}`];
+          const counts: string[] = [];
+          if (vote.yes !== null) counts.push(`${vote.yes} ayes`);
+          if (vote.no !== null) counts.push(`${vote.no} noes`);
+          if (vote.absent) counts.push(`${vote.absent} no vote recorded`);
+          return counts.length
+            ? `${parts[0]}: ${counts.join(", ")}`
+            : parts[0];
+        })
+        .join("; ") + "."
+    : "No member-level vote counts are recorded for this bill in the indexed source yet.";
+
+  // "Which records prove it?" answer derived from the bill's source trail.
+  const whichRecordsAnswer = bill.sources.length
+    ? `The source trail includes ${bill.sources
+        .map((source) => sourceTypeLabel(source.type).toLowerCase())
+        .filter((label, index, all) => all.indexOf(label) === index)
+        .join(", ")} records from ${bill.jurisdiction}.`
+    : "The source trail for this record is being indexed.";
+
+  // "Who is involved?" answer derived from the bill's named stakeholders.
+  const whoIsInvolvedAnswer = bill.stakeholders.length
+    ? bill.stakeholders
+        .map((stakeholder) => `${stakeholder.name}: ${stakeholder.publicStatement}`)
+        .join(" ")
+    : `${bill.sponsor} is listed as the sponsor of this record.`;
+
+  // Procedural impact cards, tied to this bill's records. Source trails are
+  // derived from the bill's own source types.
+  const statusCardSourceIds = bill.sources
+    .filter((source) => source.type === "bill_status")
+    .map((source) => source.id);
+  const procedureCardSourceIds = bill.sources
+    .filter(
+      (source) =>
+        source.type === "bill_text" || source.type === "bill_history",
+    )
+    .map((source) => source.id);
+  const textCardSourceIds = bill.sources
+    .filter((source) => source.type === "bill_text")
+    .map((source) => source.id);
+  const impactCards: ImpactCardItem[] = [
+    {
+      title: "Record effect",
+      body: `The bill record is no longer pending. It is recorded as ${bill.status.toLowerCase()}: ${bill.lastAction}`,
+      sourceIds: statusCardSourceIds.length
+        ? statusCardSourceIds
+        : bill.sources.slice(0, 1).map((source) => source.id),
+    },
+    {
+      title: "Procedural effect",
+      body: bill.whatHappensNext[0] ?? bill.nextAction,
+      sourceIds: procedureCardSourceIds.length
+        ? procedureCardSourceIds
+        : bill.sources.slice(0, 1).map((source) => source.id),
+    },
+    {
+      title: "Watch next",
+      body:
+        bill.whatHappensNext[1] ??
+        bill.whatHappensNext[0] ??
+        bill.nextAction,
+      sourceIds: textCardSourceIds.length
+        ? textCardSourceIds
+        : bill.sources.slice(0, 1).map((source) => source.id),
+    },
+  ];
+
+  // Topic chips: map the bill's own topic labels to topic profiles by matching
+  // name (case-insensitive) or slug, so only topics with a real page are linked.
+  const billTopicLinks = bill.topics
+    .map((topic) => {
+      const slug = topicSlug(topic);
+      return (
+        topicProfiles.find(
+          (profile) =>
+            profile.slug === slug ||
+            profile.name.toLowerCase() === topic.toLowerCase(),
+        ) ?? null
+      );
+    })
+    .filter((profile): profile is (typeof topicProfiles)[number] =>
+      Boolean(profile),
+    );
 
   return (
     <PageShell>
@@ -159,24 +307,23 @@ export default async function BillDetailPage({ params }: BillPageProps) {
                 <PlainLanguageCallout text={bill.plainLanguage} />
               ) : null}
               <div className="mt-5 flex flex-wrap gap-2">
-                <Link
-                  href="/people/senator-scott-wiener"
-                  className="rounded-full border border-record-200 bg-paper-50 px-3 py-1.5 text-sm font-semibold text-ink-700 hover:border-civic-500"
-                >
-                  Author profile
-                </Link>
-                <Link
-                  href="/topics/land-use"
-                  className="rounded-full border border-record-200 bg-paper-50 px-3 py-1.5 text-sm font-semibold text-ink-700 hover:border-civic-500"
-                >
-                  Land use topic
-                </Link>
-                <Link
-                  href="/topics/housing"
-                  className="rounded-full border border-record-200 bg-paper-50 px-3 py-1.5 text-sm font-semibold text-ink-700 hover:border-civic-500"
-                >
-                  Housing topic
-                </Link>
+                {bill.sponsorSlug ? (
+                  <Link
+                    href={`/people/${bill.sponsorSlug}`}
+                    className="rounded-full border border-record-200 bg-paper-50 px-3 py-1.5 text-sm font-semibold text-ink-700 hover:border-civic-500"
+                  >
+                    Author profile
+                  </Link>
+                ) : null}
+                {billTopicLinks.map((topic) => (
+                  <Link
+                    key={topic.slug}
+                    href={`/topics/${topic.slug}`}
+                    className="rounded-full border border-record-200 bg-paper-50 px-3 py-1.5 text-sm font-semibold text-ink-700 hover:border-civic-500"
+                  >
+                    {topic.name} topic
+                  </Link>
+                ))}
               </div>
             </div>
             <div className="rounded-lg border border-record-200 bg-paper-50 p-5">
@@ -190,7 +337,7 @@ export default async function BillDetailPage({ params }: BillPageProps) {
                 <Fact label="What happens next" value={bill.nextAction} />
               </dl>
               <div className="mt-5 border-t border-record-200 pt-4">
-                <SourceTrail sources={getSourcesByIds(["src-sb79-status"])} compact />
+                <SourceTrail sources={billStatusSources} compact />
               </div>
             </div>
           </div>
@@ -231,26 +378,26 @@ export default async function BillDetailPage({ params }: BillPageProps) {
           <RecordQuestionCard
             icon={Vote}
             question="Who voted?"
-            answer="The official vote page records Senate concurrence as 21 ayes, 8 noes, and 11 no vote recorded; the Assembly third reading vote is also listed."
+            answer={whoVotedAnswer}
             sources={voteSources}
           />
           <RecordQuestionCard
             icon={Users}
             question="Who is involved?"
-            answer="The status page lists Senator Scott Wiener as lead author and Assemblymember Wicks as principal coauthor, with Haney and Lee listed as coauthors."
-            sources={getSourcesByIds(["src-sb79-status"])}
+            answer={whoIsInvolvedAnswer}
+            sources={billStatusSources}
           />
           <RecordQuestionCard
             icon={FileSearch}
             question="Which records prove it?"
-            answer="The source trail includes LegInfo bill text, status, history, votes, and compare versions."
+            answer={whichRecordsAnswer}
             sources={bill.sources.slice(0, 3)}
           />
           <RecordQuestionCard
             icon={FileSearch}
             question="What is missing?"
             answer="Downstream implementation records and a computed line diff across every bill version are not indexed yet."
-            sources={getSourcesByIds(["src-sb79-compare", "src-sb79-status"])}
+            sources={missingProofSources}
           />
         </div>
       </section>
@@ -259,8 +406,8 @@ export default async function BillDetailPage({ params }: BillPageProps) {
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
             <RecordAccessWorkbench
-              title="Read SB 79 without leaving the record file."
-              description="The page separates upcoming vote status, incorporated chaptered text, and official-source proof so users can understand the record before opening LegInfo."
+              title={`Read ${billShortName} without leaving the record file.`}
+              description="The page separates upcoming vote status, incorporated text, and official-source proof so users can understand the record before opening the source."
               voteItems={upcomingVoteChecks.filter(recordFilter)}
               incorporatedItems={incorporatedRecords.filter(recordFilter)}
               sourceItems={sourceVerificationRecords.filter(recordFilter)}
@@ -272,17 +419,7 @@ export default async function BillDetailPage({ params }: BillPageProps) {
                 description="The record summary stays readable, but the proof remains visible on the same page."
               />
               <div className="mt-5">
-                <EvidenceStack
-                  evidence={sourceEvidence.filter((item) =>
-                    [
-                      "evidence-sb79-status-chaptered",
-                      "evidence-sb79-vote-count",
-                      "evidence-sb79-no-votes",
-                      "evidence-sb79-text-incorporated",
-                    ].includes(item.id),
-                  )}
-                  compact
-                />
+                <EvidenceStack evidence={billEvidence} compact />
               </div>
             </section>
           </div>
@@ -301,7 +438,7 @@ export default async function BillDetailPage({ params }: BillPageProps) {
               nextActionTitle: bill.nextAction,
               contactUrl: bill.sponsorContactUrl,
               publicCommentUrl: bill.publicCommentUrl,
-              cpraEntity: "California Legislative Counsel",
+              cpraEntity: bill.jurisdiction,
               cpraScope:
                 "all communications, fiscal analyses, amendment markups, hearing transcripts, and related staff reports",
             }}
@@ -326,7 +463,7 @@ export default async function BillDetailPage({ params }: BillPageProps) {
           description="These are not endorsements or predictions. They translate what the public record changes in process terms."
         />
         <div className="mt-8">
-          <ImpactCards variant="bill" />
+          <ImpactCards cards={impactCards} />
         </div>
       </section>
 
@@ -422,6 +559,14 @@ export default async function BillDetailPage({ params }: BillPageProps) {
   );
 }
 
+function topicSlug(topic: string): string {
+  return topic
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div>
@@ -471,7 +616,7 @@ function buildBillSharePresets(bill: ReturnType<typeof getBillBySlug>) {
   );
   if (senateVote && senateVote.yes !== null && senateVote.no !== null) {
     presets.push({
-      text: `${bill.title} — ${senateVote.chamberOrBody} ${senateVote.motion}: ${senateVote.yes} ayes, ${senateVote.no} noes${senateVote.absent ? `, ${senateVote.absent} absent / no vote recorded` : ""}.`,
+      text: `${bill.title} — ${senateVote.chamberOrBody} ${senateVote.motion}: ${senateVote.yes} ayes, ${senateVote.no} noes${senateVote.absent ? `, ${senateVote.absent} no vote recorded` : ""}.`,
       source: voteSource?.title ?? "Official vote record",
       sourceUrl: voteSource?.url,
       date: senateVote.date,

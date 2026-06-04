@@ -7,8 +7,7 @@ import { STARTER_CAUSES } from "@/data/starter-causes";
 
 export const metadata: Metadata = {
   title: "Starter causes",
-  description:
-    "12 starter cause cards balanced across civic concerns. Pick one to begin tracking matched records.",
+  description: `${STARTER_CAUSES.length} starter cause cards balanced across civic concerns. Pick one to begin tracking matched records.`,
   alternates: { canonical: "/causes/starters" },
 };
 
@@ -18,9 +17,10 @@ export default function StarterCausesPage() {
       <section className="border-b border-record-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <SectionHeader
+            as="h1"
             eyebrow="Starter causes"
             title="Pick a starting point in your own words."
-            description="12 starter prompts balanced across civic concerns. The product does not score causes for or against; it surfaces records that match your topics, jurisdictions, and keywords."
+            description={`${STARTER_CAUSES.length} starter prompts balanced across civic concerns. The product does not score causes for or against; it surfaces records that match your topics, jurisdictions, and keywords.`}
           />
         </div>
       </section>
@@ -29,7 +29,7 @@ export default function StarterCausesPage() {
           {STARTER_CAUSES.map((s) => (
             <li key={s.id}>
               <Link
-                href="/causes/new"
+                href={`/causes/new?starter=${encodeURIComponent(s.id)}`}
                 className="block h-full rounded-lg border border-record-200 bg-white p-5 shadow-line transition hover:border-civic-500 hover:bg-paper-50"
               >
                 <div className="flex items-center gap-2">

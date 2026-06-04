@@ -33,6 +33,33 @@ function escapeText(value: string) {
     .replace(/;/g, "\\;");
 }
 
+/**
+ * RFC 5545 §3.1 content-line folding: lines longer than 75 octets MUST be
+ * folded by inserting CRLF followed by a single space. Folds on octet
+ * boundaries (UTF-8) without ever splitting a multi-byte code point.
+ */
+export function foldIcsLine(line: string): string {
+  const bytes = Buffer.from(line, "utf8");
+  if (bytes.length <= 75) return line;
+  const parts: string[] = [];
+  let start = 0;
+  // First physical line: up to 75 octets. Continuations get a leading space,
+  // so they carry 74 octets of payload to stay within the 75-octet limit.
+  let limit = 75;
+  while (start < bytes.length) {
+    let end = Math.min(start + limit, bytes.length);
+    // Don't split inside a UTF-8 continuation byte (0b10xxxxxx).
+    while (end > start && end < bytes.length && (bytes[end] & 0xc0) === 0x80) {
+      end--;
+    }
+    const chunk = bytes.subarray(start, end).toString("utf8");
+    parts.push(start === 0 ? chunk : ` ${chunk}`);
+    start = end;
+    limit = 74;
+  }
+  return parts.join("\r\n");
+}
+
 export function buildIcs(event: CalendarEvent) {
   const end = new Date(
     event.start.getTime() + (event.durationMinutes ?? 60) * 60 * 1000,
@@ -46,13 +73,13 @@ export function buildIcs(event: CalendarEvent) {
     `DTSTAMP:${toIcsDate(new Date())}`,
     `DTSTART:${toIcsDate(event.start)}`,
     `DTEND:${toIcsDate(end)}`,
-    `SUMMARY:${escapeText(event.title)}`,
+    foldIcsLine(`SUMMARY:${escapeText(event.title)}`),
   ];
   if (event.description) {
-    lines.push(`DESCRIPTION:${escapeText(event.description)}`);
+    lines.push(foldIcsLine(`DESCRIPTION:${escapeText(event.description)}`));
   }
   if (event.location) {
-    lines.push(`LOCATION:${escapeText(event.location)}`);
+    lines.push(foldIcsLine(`LOCATION:${escapeText(event.location)}`));
   }
   if (event.url) {
     lines.push(`URL:${escapeText(event.url)}`);

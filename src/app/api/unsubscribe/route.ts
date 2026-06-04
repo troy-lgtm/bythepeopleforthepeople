@@ -35,12 +35,12 @@ export async function GET(request: NextRequest) {
 }
 
 function htmlPage(title: string, body: string, status = 200): Response {
-  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>${title}</title></head>
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>${escapeHtml(title)}</title></head>
   <body style="margin:0;font-family:Inter,system-ui,sans-serif;background:#fbfaf7;color:#07111f;">
     <div style="max-width:560px;margin:10vh auto;padding:0 24px;text-align:center;">
       <p style="font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#175c55;">By The People, For The People</p>
-      <h1 style="font-size:28px;margin:8px 0 12px;">${title}</h1>
-      <p style="font-size:15px;line-height:1.6;color:#27364f;">${body}</p>
+      <h1 style="font-size:28px;margin:8px 0 12px;">${escapeHtml(title)}</h1>
+      <p style="font-size:15px;line-height:1.6;color:#27364f;">${escapeHtml(body)}</p>
       <p style="margin-top:24px;"><a href="/" style="color:#175c55;font-weight:600;">← Back to the site</a></p>
     </div>
   </body></html>`;
@@ -48,4 +48,12 @@ function htmlPage(title: string, body: string, status = 200): Response {
     status,
     headers: { "Content-Type": "text/html; charset=utf-8" },
   });
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }

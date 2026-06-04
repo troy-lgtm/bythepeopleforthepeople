@@ -61,13 +61,18 @@ export function EvidenceStack({ evidence, compact = false }: EvidenceStackProps)
                     href={source.url}
                     target="_blank"
                     rel="noreferrer"
+                    aria-label={`Open official record: ${source.title}`}
                     className="inline-flex items-center gap-1 rounded-full border border-record-200 bg-white px-2 py-0.5 font-semibold text-ink-700 hover:border-civic-500 hover:text-civic-700"
                   >
                     Official record
                     <ExternalLink className="h-3 w-3" aria-hidden="true" />
                   </a>
                 </>
-              ) : null}
+              ) : (
+                <span className="rounded-full border border-dashed border-record-200 bg-paper-50 px-2 py-0.5">
+                  Source record not available
+                </span>
+              )}
             </div>
 
             {!compact ? (

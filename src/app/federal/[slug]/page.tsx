@@ -34,7 +34,7 @@ export async function generateMetadata({
   }
   const chamber = rep.type === "sen" ? "U.S. Senate" : "U.S. House";
   const district =
-    rep.type === "sen"
+    rep.type === "sen" || rep.district == null
       ? rep.state
       : `${rep.state}-${rep.district}`;
   const description = `${rep.name}, ${chamber} (${district}). Source-anchored civic record with contact information and official site.`;
@@ -77,7 +77,9 @@ export default async function FederalRepPage({ params }: FederalRepPageProps) {
   const district =
     rep.type === "sen"
       ? `${rep.state}, At-large`
-      : `${rep.state}-${rep.district}`;
+      : rep.district == null
+        ? rep.state
+        : `${rep.state}-${rep.district}`;
   const watchTargetId = `watch-federal-${slug}`;
 
   const personSchema = {
@@ -289,12 +291,11 @@ export default async function FederalRepPage({ params }: FederalRepPageProps) {
             <p className="mt-2 text-sm leading-6 text-ink-700">
               No roll-call vote records indexed for {rep.name} yet. Each vote
               will appear here verbatim from the Congress.gov roll-call API
-              once the CONGRESS_API_KEY env var is set and the cron is
-              enabled. Member-vote rows on indexed bills already link back to
-              this profile.
+              once that connector is enabled. Member-vote rows on indexed bills
+              already link back to this profile.
             </p>
-            <p className="mt-3 inline-flex rounded-full border border-notice-100 bg-notice-50 px-2.5 py-1 font-mono text-[11px] font-semibold text-notice-500">
-              Pending: CONGRESS_API_KEY
+            <p className="mt-3 inline-flex rounded-full border border-record-200 bg-paper-100 px-2.5 py-1 text-[11px] font-semibold text-ink-600">
+              Not yet connected
             </p>
           </article>
           <article className="rounded-lg border border-record-200 bg-paper-50 p-5">
@@ -309,8 +310,8 @@ export default async function FederalRepPage({ params }: FederalRepPageProps) {
               Sponsorship records land here from the same Congress.gov
               adapter and link to each bill&apos;s indexed record page.
             </p>
-            <p className="mt-3 inline-flex rounded-full border border-notice-100 bg-notice-50 px-2.5 py-1 font-mono text-[11px] font-semibold text-notice-500">
-              Pending: CONGRESS_API_KEY
+            <p className="mt-3 inline-flex rounded-full border border-record-200 bg-paper-100 px-2.5 py-1 text-[11px] font-semibold text-ink-600">
+              Not yet connected
             </p>
           </article>
           <article className="rounded-lg border border-record-200 bg-paper-50 p-5">
@@ -325,8 +326,8 @@ export default async function FederalRepPage({ params }: FederalRepPageProps) {
               connector pulls assignments from the united-states/congress
               committee-membership feed during each refresh.
             </p>
-            <p className="mt-3 inline-flex rounded-full border border-notice-100 bg-notice-50 px-2.5 py-1 font-mono text-[11px] font-semibold text-notice-500">
-              Pending: connector enable
+            <p className="mt-3 inline-flex rounded-full border border-record-200 bg-paper-100 px-2.5 py-1 text-[11px] font-semibold text-ink-600">
+              Not yet connected
             </p>
           </article>
         </div>

@@ -25,9 +25,12 @@ type WrappedPageProps = {
 };
 
 function fromParams(sp: Record<string, string | undefined>): WrappedView | null {
-  if (!sp.c) return null;
+  // Only a positive, provided cause count represents a real shared recap;
+  // c=0 (or a non-numeric c) should fall through to the viewer's own wrapped.
+  const causesCount = Number(sp.c);
+  if (!Number.isFinite(causesCount) || causesCount <= 0) return null;
   return {
-    causesCount: Number(sp.c) || 0,
+    causesCount,
     totalMatched: Number(sp.m) || 0,
     movedRecently: Number(sp.mv) || 0,
     topTopics: (sp.t ?? "").split("|").filter(Boolean),

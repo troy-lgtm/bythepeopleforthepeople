@@ -20,7 +20,15 @@ export function WatchButton({
   const [watched, setWatched] = useState(false);
 
   useEffect(() => {
-    setWatched(readWatchlist().includes(targetId));
+    const sync = () => setWatched(readWatchlist().includes(targetId));
+    sync();
+    // Keep multiple watch buttons (and other tabs) in sync.
+    window.addEventListener("btpftp-watchlist-change", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("btpftp-watchlist-change", sync);
+      window.removeEventListener("storage", sync);
+    };
   }, [targetId]);
 
   async function toggleWatch() {
@@ -29,7 +37,11 @@ export function WatchButton({
       ? current.filter((id) => id !== targetId)
       : [...current, targetId];
 
-    window.localStorage.setItem(storageKey, JSON.stringify(next));
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(next));
+    } catch {
+      // Storage may be unavailable (private mode, quota); keep in-memory state.
+    }
     window.dispatchEvent(new Event("btpftp-watchlist-change"));
     setWatched(next.includes(targetId));
 
@@ -68,14 +80,22 @@ export function WatchButton({
   );
 }
 
-export function readWatchlist() {
+export function readWatchlist(): string[] {
   if (typeof window === "undefined") {
     return [];
   }
 
   try {
     const raw = window.localStorage.getItem(storageKey);
-    return raw ? (JSON.parse(raw) as string[]) : [];
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (
+      Array.isArray(parsed) &&
+      parsed.every((item) => typeof item === "string")
+    ) {
+      return parsed as string[];
+    }
+    return [];
   } catch {
     return [];
   }

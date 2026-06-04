@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Filter, Search } from "lucide-react";
 import { answerIntents, sourceEvidence } from "@/data/product-loop";
 import { exploreItems, getSourcesByIds } from "@/data/records";
@@ -62,6 +62,8 @@ const sourceTypes: Array<"Any source" | SourceType> = [
 const dateRanges = ["Any date", "2026", "2025", "Final actions"] as const;
 
 export function ExploreWorkspace() {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const initialQuery = searchParams?.get("q") ?? "";
   const [query, setQuery] = useState(initialQuery);
@@ -82,30 +84,35 @@ export function ExploreWorkspace() {
   const [dateRange, setDateRange] =
     useState<(typeof dateRanges)[number]>("Any date");
 
-  const bestAnswer = useMemo(() => {
+  // `matched` distinguishes a genuine hit from the default first intent, so we
+  // never present a confident "best answer" for an unrelated query.
+  const { bestAnswer, bestAnswerMatched } = useMemo(() => {
     const normalized = query.trim().toLowerCase();
 
     if (!normalized) {
-      return answerIntents[0];
+      return { bestAnswer: answerIntents[0], bestAnswerMatched: true };
     }
 
     const tokens = normalized.split(/\s+/).filter(Boolean);
 
-    return (
-      answerIntents.find((answer) => {
-        const haystack = [
-          answer.label,
-          answer.question,
-          answer.shortAnswer,
-          answer.detailedAnswer,
-          answer.status,
-        ]
-          .join(" ")
-          .toLowerCase();
+    const found = answerIntents.find((answer) => {
+      const haystack = [
+        answer.label,
+        answer.question,
+        answer.shortAnswer,
+        answer.detailedAnswer,
+        answer.status,
+      ]
+        .join(" ")
+        .toLowerCase();
 
-        return tokens.some((token) => haystack.includes(token));
-      }) ?? answerIntents[0]
-    );
+      return tokens.some((token) => haystack.includes(token));
+    });
+
+    return {
+      bestAnswer: found ?? answerIntents[0],
+      bestAnswerMatched: Boolean(found),
+    };
   }, [query]);
 
   const results = useMemo(() => {
@@ -234,6 +241,10 @@ export function ExploreWorkspace() {
             setDecisionType("Any type");
             setDateRange("Any date");
             setSourceType("Any source");
+            // Also drop ?q= from the URL so the synced query does not return.
+            if (searchParams?.get("q")) {
+              router.replace(pathname ?? "/explore", { scroll: false });
+            }
           }}
           className="mt-4 h-10 w-full rounded-md border border-record-200 bg-white text-sm font-semibold text-ink-800 hover:border-civic-500"
         >
@@ -242,47 +253,65 @@ export function ExploreWorkspace() {
       </aside>
 
       <div className="grid gap-5">
-        <article className="rounded-lg border border-civic-100 bg-civic-50 p-5">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-civic-100 bg-white px-2.5 py-1 text-xs font-semibold text-civic-700">
-              Best answer
+        {bestAnswerMatched ? (
+          <article className="rounded-lg border border-civic-100 bg-civic-50 p-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-civic-100 bg-white px-2.5 py-1 text-xs font-semibold text-civic-700">
+                Best answer
+              </span>
+              <span className="rounded-full border border-civic-100 bg-white px-2.5 py-1 text-xs font-semibold text-ink-700">
+                {bestAnswer.status}
+              </span>
+            </div>
+            <h3 className="mt-3 text-xl font-semibold tracking-tight text-ink-950">
+              {bestAnswer.question}
+            </h3>
+            <p className="mt-2 text-base leading-7 text-ink-900">
+              {bestAnswer.shortAnswer}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Link
+                href={bestAnswer.href}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-ink-950 px-3 text-sm font-semibold text-white hover:bg-ink-800"
+              >
+                {bestAnswer.actionLabel}
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+              <Link
+                href="/sources"
+                className="inline-flex h-10 items-center justify-center rounded-md border border-record-200 bg-white px-3 text-sm font-semibold text-ink-900 hover:border-civic-500"
+              >
+                Verify source trail
+              </Link>
+            </div>
+            <div className="mt-4">
+              <EvidenceStack evidence={evidence.slice(0, 2)} compact />
+            </div>
+          </article>
+        ) : (
+          <article className="rounded-lg border border-record-200 bg-white p-5 shadow-line">
+            <span className="inline-flex rounded-full border border-record-200 bg-paper-50 px-2.5 py-1 text-xs font-semibold text-ink-700">
+              No direct answer
             </span>
-            <span className="rounded-full border border-civic-100 bg-white px-2.5 py-1 text-xs font-semibold text-ink-700">
-              {bestAnswer.status}
-            </span>
-          </div>
-          <h3 className="mt-3 text-xl font-semibold tracking-tight text-ink-950">
-            {bestAnswer.question}
-          </h3>
-          <p className="mt-2 text-base leading-7 text-ink-900">
-            {bestAnswer.shortAnswer}
-          </p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <Link
-              href={bestAnswer.href}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-ink-950 px-3 text-sm font-semibold text-white hover:bg-ink-800"
-            >
-              {bestAnswer.actionLabel}
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
-            <Link
-              href="/sources"
-              className="inline-flex h-10 items-center justify-center rounded-md border border-record-200 bg-white px-3 text-sm font-semibold text-ink-900 hover:border-civic-500"
-            >
-              Verify source trail
-            </Link>
-          </div>
-          <div className="mt-4">
-            <EvidenceStack evidence={evidence.slice(0, 2)} compact />
-          </div>
-        </article>
+            <h3 className="mt-3 text-lg font-semibold tracking-tight text-ink-950">
+              No answer matched &ldquo;{query.trim()}&rdquo;.
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-ink-700">
+              We won&apos;t guess. Try a different phrasing, or scan the matching
+              records below — every one keeps its source trail attached.
+            </p>
+          </article>
+        )}
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-civic-700">
               Matching records
             </p>
-            <h2 className="mt-1 text-2xl font-semibold tracking-tight text-ink-950">
+            <h2
+              className="mt-1 text-2xl font-semibold tracking-tight text-ink-950"
+              aria-live="polite"
+            >
               {results.length} result{results.length === 1 ? "" : "s"}
             </h2>
           </div>

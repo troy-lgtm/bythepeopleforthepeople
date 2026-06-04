@@ -1,7 +1,8 @@
 import { type NextRequest } from "next/server";
 import type { Cause } from "@/data/types";
 import { buildDigest, renderDigestHtml, renderDigestText } from "@/lib/digest";
-import { jsonError, jsonOk } from "@/lib/api";
+import { jsonError, jsonOk, timingSafeEqualStr } from "@/lib/api";
+import { isEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -17,7 +18,7 @@ type SendRequest = {
 };
 
 export async function POST(request: NextRequest) {
-  const secret = request.headers.get("x-digest-send-secret");
+  const secret = request.headers.get("x-digest-send-secret") ?? "";
   const expected = process.env.DIGEST_SEND_SECRET;
   if (!expected) {
     return jsonError(
@@ -26,13 +27,13 @@ export async function POST(request: NextRequest) {
       "DIGEST_SEND_SECRET is not set. Configure it in the deployment environment to enable digest delivery.",
     );
   }
-  if (secret !== expected) {
+  if (!timingSafeEqualStr(secret, expected)) {
     return jsonError(401, "unauthorized", "Provide a valid x-digest-send-secret header.");
   }
 
   const body = (await request.json().catch(() => ({}))) as SendRequest;
-  if (!body.to || !body.to.includes("@")) {
-    return jsonError(400, "to_required", "Provide a recipient email in `to`.");
+  if (!isEmail(body.to)) {
+    return jsonError(400, "to_required", "Provide a valid recipient email in `to`.");
   }
 
   const payload = buildDigest({
@@ -97,8 +98,7 @@ export async function POST(request: NextRequest) {
     return jsonOk({
       sent: true,
       recipient: body.to,
-      providerId: json.id ?? null,
-      providerResponse: json,
+      providerId: typeof json.id === "string" ? json.id : null,
     });
   } catch (err) {
     return jsonError(

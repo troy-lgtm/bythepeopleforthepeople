@@ -2,17 +2,14 @@
 
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
+import { copyText } from "@/lib/clipboard";
 
 export function CopyCommentButton({ text }: { text: string }) {
   const [state, setState] = useState<"idle" | "copied" | "error">("idle");
   async function copy() {
-    try {
-      await navigator.clipboard.writeText(text);
-      setState("copied");
-      window.setTimeout(() => setState("idle"), 2500);
-    } catch {
-      setState("error");
-    }
+    const ok = await copyText(text);
+    setState(ok ? "copied" : "error");
+    window.setTimeout(() => setState("idle"), 2500);
   }
   return (
     <button

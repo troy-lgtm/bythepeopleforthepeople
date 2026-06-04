@@ -195,6 +195,7 @@ export default function DevelopersPage() {
       <section className="border-b border-record-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <SectionHeader
+            as="h1"
             eyebrow="Developers and AI engines"
             title="Ground civic answers on a source-anchored API."
             description="The full public-record index is queryable as JSON. Use it to power AI answers, newsroom dashboards, civic apps, and research. Fair use is free. Attribution required."

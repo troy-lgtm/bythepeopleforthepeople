@@ -75,7 +75,7 @@ export const STARTER_CAUSES: StarterCause[] = [
   },
   {
     id: "encampment-policy",
-    emoji: "⚖",
+    emoji: "⚖️",
     title: "Encampment policy and enforcement",
     outcome:
       "I want a clear, consistent policy for sidewalk and park encampments in my city.",
@@ -193,7 +193,7 @@ export const STARTER_CAUSES: StarterCause[] = [
   },
   {
     id: "small-business",
-    emoji: "🛠",
+    emoji: "🛠️",
     title: "Help small businesses in my city",
     outcome:
       "I want policy that makes it easier to start, hire for, and run a small business locally.",

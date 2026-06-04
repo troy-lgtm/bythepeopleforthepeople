@@ -75,7 +75,12 @@ export function TrackAsCauseButton({
         setBusy(false);
         return;
       }
-      window.localStorage.setItem("btpftp-causes", JSON.stringify(next));
+      try {
+        window.localStorage.setItem("btpftp-causes", JSON.stringify(next));
+      } catch {
+        // localStorage can throw in private mode or when over quota; the
+        // cause is already persisted server-side via the cookie, so ignore.
+      }
       setState("added");
       router.push(`/causes/${id}`);
     } catch (err) {

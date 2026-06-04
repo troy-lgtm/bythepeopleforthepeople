@@ -6,6 +6,7 @@ import { CopyCommentButton } from "@/components/CopyCommentButton";
 import { PageShell } from "@/components/PageShell";
 import { SectionHeader } from "@/components/SectionHeader";
 import { matchCause } from "@/lib/cause-matcher";
+import { encodeCauseForPublish } from "@/lib/cause-encoding";
 import { readCauseById } from "@/lib/causes";
 
 type Props = { params: Promise<{ id: string }> };
@@ -34,10 +35,17 @@ export default async function CauseSharePage({ params }: Props) {
   const totalRecords =
     matches.bills.length + matches.locals.length + matches.exploreItems.length;
 
+  // Build the public "source" link from the ENCODED cause snapshot, not the
+  // real cause id. The real-id page (/causes/{id}) is private to the owner's
+  // cookie and lists every other cause; the encoded feed exposes only this
+  // cause's matched records, keeping the share anonymous as claimed.
+  const encoded = encodeCauseForPublish(cause);
+  const publicSourceUrl = `${BASE}/feed/causes/${encoded}.xml`;
+
   const sharePathParams = new URLSearchParams({
     text: `${cause.title} — ${cause.outcome}`,
     source: `${totalRecords} indexed civic records currently match this cause`,
-    sourceUrl: `${BASE}/causes/${cause.id}`,
+    sourceUrl: publicSourceUrl,
   });
   const shareUrl = `${BASE}/share?${sharePathParams.toString()}`;
   const ogParams = new URLSearchParams({

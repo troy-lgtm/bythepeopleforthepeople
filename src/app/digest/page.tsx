@@ -35,6 +35,7 @@ export default async function DigestPage() {
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-2 lg:items-start lg:px-8">
           <div>
             <SectionHeader
+              as="h1"
               eyebrow="Email updates"
               title="Get civic updates, delivered."
               description="Pick a cadence and we email you source-anchored updates on the records, reps, and causes you follow. Confirm by email; unsubscribe in one tap. We never sell or share your address."

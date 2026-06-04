@@ -44,7 +44,9 @@ export async function GET() {
     const sources = getSourcesByIds(event.sourceIds);
     entries.push({
       id: `event:${event.id}`,
-      href: `${BASE}${sources[0]?.url ? "" : ""}#${event.id}`,
+      // Prefer the official source URL; otherwise the real on-site activity
+      // record. Never a dead homepage anchor.
+      href: sources[0]?.url ?? `${BASE}/activity`,
       title: event.title,
       summary: event.description,
       updated: new Date(event.date).toISOString(),

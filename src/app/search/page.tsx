@@ -84,14 +84,29 @@ export default async function SearchPage({
   }
   const typesWithResults = TYPE_ORDER.filter((t) => grouped[t]?.length);
 
+  // Index-wide counts for the empty-state hint.
   const typeCounts: Record<string, number> = {};
   for (const d of docs) typeCounts[d.type] = (typeCounts[d.type] ?? 0) + 1;
+
+  // Per-type match counts for the query IGNORING the active type filter, so the
+  // filter chips show real, query-scoped counts and remain switchable.
+  let queryMatchCount = 0;
+  const queryTypeCounts: Record<string, number> = {};
+  if (query) {
+    for (const d of docs) {
+      if (score(d, query) > 0) {
+        queryMatchCount += 1;
+        queryTypeCounts[d.type] = (queryTypeCounts[d.type] ?? 0) + 1;
+      }
+    }
+  }
 
   return (
     <PageShell>
       <section className="border-b border-record-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <SectionHeader
+            as="h1"
             eyebrow="Search"
             title={
               query
@@ -132,34 +147,45 @@ export default async function SearchPage({
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-600">
-            Filter by type:
-          </span>
-          <Link
-            href={query ? `/search?q=${encodeURIComponent(query)}` : "/search"}
-            className={
-              !filterType
-                ? "rounded-full border border-civic-500 bg-civic-50 px-2.5 py-1 text-xs font-semibold text-civic-700"
-                : "rounded-full border border-record-200 bg-white px-2.5 py-1 text-xs font-semibold text-ink-700 hover:border-civic-500"
-            }
-          >
-            All ({docs.length})
-          </Link>
-          {TYPE_ORDER.map((t) => (
+        <p className="sr-only" role="status" aria-live="polite">
+          {query
+            ? `${matched.length} ${matched.length === 1 ? "result" : "results"} for ${query}`
+            : "Enter a query to search."}
+        </p>
+        {/* Type filters only make sense once there is a query; with an empty
+            query they would link to zero-result URLs, so hide them. */}
+        {query ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-600">
+              Filter by type:
+            </span>
             <Link
-              key={t}
-              href={`/search?q=${encodeURIComponent(query)}&type=${t}`}
+              href={`/search?q=${encodeURIComponent(query)}`}
               className={
-                filterType === t
+                !filterType
                   ? "rounded-full border border-civic-500 bg-civic-50 px-2.5 py-1 text-xs font-semibold text-civic-700"
                   : "rounded-full border border-record-200 bg-white px-2.5 py-1 text-xs font-semibold text-ink-700 hover:border-civic-500"
               }
             >
-              {TYPE_LABEL[t]} ({typeCounts[t] ?? 0})
+              All ({queryMatchCount})
             </Link>
-          ))}
-        </div>
+            {TYPE_ORDER.filter(
+              (t) => (queryTypeCounts[t] ?? 0) > 0 || filterType === t,
+            ).map((t) => (
+              <Link
+                key={t}
+                href={`/search?q=${encodeURIComponent(query)}&type=${t}`}
+                className={
+                  filterType === t
+                    ? "rounded-full border border-civic-500 bg-civic-50 px-2.5 py-1 text-xs font-semibold text-civic-700"
+                    : "rounded-full border border-record-200 bg-white px-2.5 py-1 text-xs font-semibold text-ink-700 hover:border-civic-500"
+                }
+              >
+                {TYPE_LABEL[t]} ({queryTypeCounts[t] ?? 0})
+              </Link>
+            ))}
+          </div>
+        ) : null}
 
         {!query ? (
           <div className="mt-8 rounded-lg border border-record-200 bg-paper-50 p-6 text-sm leading-6 text-ink-700">

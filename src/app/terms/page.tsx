@@ -14,6 +14,7 @@ export default function TermsPage() {
       <section className="border-b border-record-200 bg-white">
         <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
           <SectionHeader
+            as="h1"
             eyebrow="Terms"
             title="Plain-English terms of use."
             description="No lock-in, no surveillance, no hidden fees. Just attribution and good faith."
@@ -61,7 +62,7 @@ export default function TermsPage() {
 
         <h2 className="mt-8 text-lg font-semibold text-ink-950">No warranty</h2>
         <p className="mt-3">
-          The site is provided as-is. We aim for 100% accuracy and label
+          The site is provided as-is. We aim for accuracy and label
           missing data when we are not sure. We are not liable for downstream
           decisions made on the basis of this index. When in doubt, read the
           source record.
