@@ -9,6 +9,7 @@ type Status =
   | { kind: "submitting" }
   | { kind: "pending" }
   | { kind: "updated" }
+  | { kind: "private_pilot"; message: string }
   | { kind: "error"; message: string };
 
 // Pragmatic email shape check: a local part, an @, and a dotted domain.
@@ -47,7 +48,7 @@ export function SubscribeForm() {
       });
       const json = (await res.json().catch(() => ({}))) as {
         ok?: boolean;
-        data?: { status?: string };
+        data?: { status?: string; message?: string };
         error?: { message?: string };
       };
       if (!res.ok || !json.ok) {
@@ -59,7 +60,15 @@ export function SubscribeForm() {
         });
         return;
       }
-      if (json.data?.status === "updated") {
+      if (json.data?.status === "private_pilot") {
+        // Calm, honest gate: the pilot only accepts the test user right now.
+        setStatus({
+          kind: "private_pilot",
+          message:
+            json.data.message ??
+            "Private test mode is active. This pilot is currently limited to the test user.",
+        });
+      } else if (json.data?.status === "updated") {
         // Already-confirmed address; preferences refreshed, not a new signup.
         setStatus({ kind: "updated" });
       } else {
@@ -86,6 +95,9 @@ export function SubscribeForm() {
         body="This address was already confirmed. Your cadence and tracked causes have been refreshed."
       />
     );
+  }
+  if (status.kind === "private_pilot") {
+    return <Done title="Private pilot" body={status.message} />;
   }
 
   return (
