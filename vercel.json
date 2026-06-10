@@ -6,6 +6,10 @@
       "schedule": "0 9 * * *"
     },
     {
+      "path": "/api/cron/detect-movements",
+      "schedule": "30 9 * * *"
+    },
+    {
       "path": "/api/cron/send-digests",
       "schedule": "0 13 * * *"
     }
