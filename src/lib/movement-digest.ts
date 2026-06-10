@@ -34,6 +34,12 @@ export type MovementDigest = {
   previewText: string;
   intro: string;
   sections: DigestSection[];
+  /**
+   * When the period itself is quiet: the latest indexed movement on the
+   * watcher's causes, explicitly dated and labeled as older than the period.
+   * Honest by construction — dates are always shown.
+   */
+  latestBeyondPeriod: DigestSection[];
   /** Coverage note when the watcher's ZIP has no indexed local coverage. */
   coverageNote?: string;
   totalMovements: number;
@@ -140,6 +146,36 @@ export async function buildMovementDigest(opts: {
 
   const matchedTotal = dedupe(sections.flatMap((s) => s.items)).length;
 
+  // Quiet period: surface the latest indexed movement on the same causes,
+  // clearly dated, so a new watcher still sees what the record shows.
+  let latestBeyondPeriod: DigestSection[] = [];
+  if (matchedTotal === 0) {
+    const allTime = await listMovementEvents({
+      places: placeKeys,
+      digestWorthyOnly: true,
+      limit: 50,
+    });
+    if (opts.causes && opts.causes.length > 0) {
+      latestBeyondPeriod = opts.causes
+        .map((cause) => ({
+          causeSlug: cause.id,
+          causeName: cause.title,
+          items: allTime
+            .filter((e) => movementMatchesUserCause(e, cause))
+            .slice(0, 2),
+        }))
+        .filter((s) => s.items.length > 0);
+    } else {
+      latestBeyondPeriod = CAUSE_CATALOG.map((cause) => ({
+        causeSlug: cause.slug,
+        causeName: cause.name,
+        items: allTime
+          .filter((e) => e.causeSlugs.includes(cause.slug))
+          .slice(0, 2),
+      })).filter((s) => s.items.length > 0);
+    }
+  }
+
   // Deterministic subject templates, honest in the quiet case. The period
   // word tracks the actual window so a 30-day digest never claims "this week".
   const periodWord =
@@ -177,6 +213,7 @@ export async function buildMovementDigest(opts: {
       : "Every claim links to the official record.",
     intro,
     sections,
+    latestBeyondPeriod,
     coverageNote,
     totalMovements: matchedTotal,
     privateTestMode: flags.privateTestMode,
@@ -237,8 +274,22 @@ export function renderMovementDigestText(
       `See everything we track: ${baseUrl}/what-moved`,
     );
     lines.push("");
+    if (d.latestBeyondPeriod.length > 0) {
+      lines.push("LATEST ON YOUR CAUSES (older than this period — dates shown)");
+      lines.push("------------------------------------------------------------");
+      for (const section of d.latestBeyondPeriod) {
+        for (const item of section.items) {
+          lines.push(
+            `- ${section.causeName} · [${movementTypeLabel(item.movementType)}] ${item.title} (${item.occurredAt})`,
+          );
+          lines.push(`  Receipt: ${baseUrl}/receipts/${item.id}?ref=digest`);
+          lines.push(`  Source: ${item.sourceLabel} (${item.sourceUrl})`);
+        }
+      }
+      lines.push("");
+    }
   }
-  for (const section of d.sections) {
+  for (const section of d.totalMovements === 0 ? [] : d.sections) {
     if (section.items.length === 0) {
       lines.push(`${section.causeName}: no movement this period.`);
       lines.push("");
@@ -313,7 +364,14 @@ export function renderMovementDigestHtml(
           ? `<p style="margin:16px 0 0 0;font-size:13px;line-height:1.6;color:#27364f;">No digest-worthy movement matched your causes this period. We checked; quiet is the honest answer. <a href="${baseUrl}/what-moved?ref=digest" style="color:#175c55;">See everything we track</a>.</p>`
           : ""
       }
-      ${d.sections.map(section).join("")}
+      ${
+        d.totalMovements === 0 && d.latestBeyondPeriod.length > 0
+          ? `<h2 style="font-size:14px;margin:22px 0 10px 0;border-bottom:1px solid #eceef4;padding-bottom:6px;color:#07111f;">Latest on your causes <span style="font-weight:400;color:#40516a;">(older than this period — dates shown)</span></h2>${d.latestBeyondPeriod
+              .map((s) => s.items.map(item).join(""))
+              .join("")}`
+          : ""
+      }
+      ${d.totalMovements === 0 ? "" : d.sections.map(section).join("")}
       <p style="margin:20px 0 0 0;"><a href="${baseUrl}/what-moved?ref=digest" style="color:#175c55;font-weight:600;font-size:13px;">See everything that moved</a></p>
       <hr style="border:none;border-top:1px solid #eceef4;margin:20px 0 14px 0;">
       ${
