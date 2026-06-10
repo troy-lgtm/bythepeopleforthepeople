@@ -1,6 +1,7 @@
 import { type NextRequest } from "next/server";
 import { sourceRecords } from "@/data/records";
 import { jsonError, jsonOk, timingSafeEqualStr } from "@/lib/api";
+import { assertCanNotifyRecipient } from "@/lib/notification-guard";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -61,15 +62,23 @@ export async function GET(request: NextRequest) {
   const failing = checks.filter((c) => !c.ok);
 
   if (failing.length > 0 && process.env.CORRECTIONS_WEBHOOK_URL) {
-    fetch(process.env.CORRECTIONS_WEBHOOK_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        event: "source_freshness_alert",
-        ranAt: new Date().toISOString(),
-        failing,
-      }),
-    }).catch(() => null);
+    // Outbound webhooks count as notifications: blocked in private test mode.
+    const decision = await assertCanNotifyRecipient(
+      process.env.CORRECTIONS_WEBHOOK_URL,
+      "webhook",
+      { payloadSummary: "source_freshness_alert" },
+    );
+    if (decision.allowed) {
+      fetch(process.env.CORRECTIONS_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event: "source_freshness_alert",
+          ranAt: new Date().toISOString(),
+          failing,
+        }),
+      }).catch(() => null);
+    }
   }
 
   return jsonOk({

@@ -1,7 +1,32 @@
-import "server-only";
 import { randomBytes } from "node:crypto";
-import { Redis } from "@upstash/redis";
-import type { Cause } from "@/data/types";
+import type { Cause } from "../data/types";
+import {
+  kvDel,
+  kvGet,
+  kvMget,
+  kvSet,
+  setAdd,
+  setMembers,
+  setRemove,
+  storeIsDurable,
+  windowIncr,
+} from "./store";
+
+/**
+ * Persistent subscribers = the account-tier watchlist. A subscriber row holds
+ * the ZIP + causes being watched, double-opt-in state, and audit fields.
+ *
+ * Storage rides on the store facade: Upstash Redis when configured, explicit
+ * in-memory fallback otherwise so the full loop runs env-less in local dev.
+ * Memory mode is ephemeral and surfaced as such wherever store status shows.
+ *
+ * Server-side module (also imported by npx-tsx scripts, so no "server-only";
+ * the window check enforces the same boundary).
+ */
+
+if (typeof window !== "undefined") {
+  throw new Error("subscribers is server-side only");
+}
 
 export type Cadence = "daily" | "weekly";
 
@@ -15,27 +40,20 @@ export type Subscriber = {
   createdAt: string;
   confirmedAt?: string;
   lastSentAt?: string;
+  /** Last time a digest covered movement for this watcher. */
+  lastSeenMovementAt?: string;
+  /** True when this is the designated private-pilot test user. */
+  isTestUser?: boolean;
+  /** Where the subscription came from: "site", "seed-script", etc. */
+  source?: string;
 };
 
-let client: Redis | null | undefined;
-
 /**
- * Lazily construct the Redis client. Supports both the Vercel KV naming
- * (KV_REST_API_*) and the native Upstash naming (UPSTASH_REDIS_REST_*) so it
- * works regardless of how the store is provisioned. Returns null when no
- * store is configured — every caller degrades gracefully on null.
+ * Whether subscriber writes survive restarts. Memory mode still works for
+ * local testing; production sending requires the durable store.
  */
-function redis(): Redis | null {
-  if (client !== undefined) return client;
-  const url = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
-  const token =
-    process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
-  client = url && token ? new Redis({ url, token }) : null;
-  return client;
-}
-
 export function isStoreConfigured(): boolean {
-  return redis() !== null;
+  return storeIsDurable();
 }
 
 const KEY_INDEX = "subs:index";
@@ -47,24 +65,26 @@ export function newToken(): string {
 }
 
 export async function getSubscriber(email: string): Promise<Subscriber | null> {
-  const r = redis();
-  if (!r) return null;
-  return (await r.get<Subscriber>(subKey(email))) ?? null;
+  return (await kvGet<Subscriber>(subKey(email))) ?? null;
 }
 
 export async function upsertSubscriber(sub: Subscriber): Promise<void> {
-  const r = redis();
-  if (!r) throw new Error("store_not_configured");
   const email = sub.email.toLowerCase();
-  await r.set(subKey(email), { ...sub, email });
-  await r.set(tokKey(sub.token), email);
-  await r.sadd(KEY_INDEX, email);
+  await kvSet(subKey(email), { ...sub, email });
+  await kvSet(tokKey(sub.token), email);
+  await setAdd(KEY_INDEX, email);
 }
 
 export async function emailForToken(token: string): Promise<string | null> {
-  const r = redis();
-  if (!r) return null;
-  return (await r.get<string>(tokKey(token))) ?? null;
+  return (await kvGet<string>(tokKey(token))) ?? null;
+}
+
+export async function getSubscriberByToken(
+  token: string,
+): Promise<Subscriber | null> {
+  const email = await emailForToken(token);
+  if (!email) return null;
+  return getSubscriber(email);
 }
 
 export async function confirmByToken(
@@ -85,62 +105,56 @@ export async function confirmByToken(
 }
 
 export async function removeByToken(token: string): Promise<string | null> {
-  const r = redis();
-  if (!r) return null;
   const email = await emailForToken(token);
   if (!email) return null;
-  await r.del(subKey(email));
-  await r.del(tokKey(token));
-  await r.srem(KEY_INDEX, email);
+  await kvDel(subKey(email));
+  await kvDel(tokKey(token));
+  await setRemove(KEY_INDEX, email);
   return email;
 }
 
-export async function listConfirmed(): Promise<Subscriber[]> {
-  const r = redis();
-  if (!r) return [];
-  const emails = await r.smembers(KEY_INDEX);
+export async function listAll(): Promise<Subscriber[]> {
+  const emails = await setMembers(KEY_INDEX);
   if (!emails.length) return [];
-  const subs = await r.mget<Subscriber[]>(...emails.map((e) => subKey(e)));
-  return subs.filter((s): s is Subscriber => Boolean(s) && s!.confirmed);
+  const subs = await kvMget<Subscriber>(emails.map((e) => subKey(e)));
+  return subs.filter((s): s is Subscriber => Boolean(s));
+}
+
+export async function listConfirmed(): Promise<Subscriber[]> {
+  return (await listAll()).filter((s) => s.confirmed);
 }
 
 export async function markSent(email: string, when: string): Promise<void> {
   const sub = await getSubscriber(email);
   if (!sub) return;
-  await upsertSubscriber({ ...sub, lastSentAt: when });
+  await upsertSubscriber({
+    ...sub,
+    lastSentAt: when,
+    lastSeenMovementAt: when,
+  });
 }
 
 /**
- * Best-effort fixed-window rate limit backed by Redis. Returns `{ ok: true }`
- * (allowed) when no store is configured so local dev is never blocked. On the
- * first hit in a window the key's TTL is set; once the count exceeds `limit`
- * the caller is told to reject. Failures fail open — never block a legit
- * subscriber because Redis hiccupped.
+ * Best-effort fixed-window rate limit. Fails open — never block a legit
+ * subscriber because the store hiccupped.
  */
 export async function rateLimit(
   key: string,
   limit: number,
   windowSeconds: number,
 ): Promise<{ ok: boolean; count: number }> {
-  const r = redis();
-  if (!r) return { ok: true, count: 0 };
-  try {
-    const count = await r.incr(key);
-    if (count === 1) await r.expire(key, windowSeconds);
-    return { ok: count <= limit, count };
-  } catch {
-    return { ok: true, count: 0 };
-  }
+  const count = await windowIncr(key, windowSeconds);
+  return { ok: count === 0 || count <= limit, count };
 }
 
 /**
  * Real count of confirmed subscribers in a ZIP — for honest local social
- * proof ("N people near you get updates"). Returns 0 when the store is
- * unconfigured or no one has subscribed; callers must not invent a number.
+ * proof ("N people near you get updates"). Returns 0 when no one has
+ * subscribed; callers must not invent a number.
  */
 export async function countConfirmedByZip(zip: string): Promise<number> {
   const trimmed = zip.trim();
-  if (!trimmed || !isStoreConfigured()) return 0;
+  if (!trimmed) return 0;
   const subs = await listConfirmed();
   return subs.filter((s) => s.zip === trimmed).length;
 }
