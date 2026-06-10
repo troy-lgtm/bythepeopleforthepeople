@@ -86,15 +86,16 @@ export async function buildMovementDigest(opts: {
     .slice(0, 10);
   const flags = launchFlags();
 
-  // Resolve the place scope from the ZIP, honestly.
-  let placeKey: string | undefined;
+  // Resolve the place scope from the ZIP, honestly. A ZIP inside indexed
+  // coverage watches every level it belongs to (LA city + CA state).
+  let placeKeys: string[] | undefined;
   let placeLabel = "your places";
   let coverageNote: string | undefined;
   if (opts.zip) {
     const zp = zipToPlace(opts.zip);
     if (zp.placeKeys.length > 0) {
-      placeKey = zp.placeKeys[0];
-      placeLabel = getPlace(placeKey)?.shortName ?? zp.city;
+      placeKeys = zp.placeKeys;
+      placeLabel = getPlace(zp.placeKeys[0])?.shortName ?? zp.city;
     } else {
       placeLabel = zp.known ? zp.city : `ZIP ${opts.zip}`;
       coverageNote = zp.known
@@ -108,7 +109,7 @@ export async function buildMovementDigest(opts: {
   // Recent digest-worthy movement in scope. If the period is quiet, the
   // digest says so instead of stretching the window silently.
   const recent = await listMovementEvents({
-    place: placeKey,
+    places: placeKeys,
     sinceDays: periodDays,
     digestWorthyOnly: true,
   });

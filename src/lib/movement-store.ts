@@ -133,6 +133,11 @@ export async function detectAndStoreMovements(
 export type MovementFilter = {
   /** Place key ("la", "ca") — omitted means everywhere. */
   place?: string;
+  /**
+   * Any-of place keys. A watcher in an LA ZIP gets LA city AND CA state
+   * movement, so ZIP-scoped callers pass every key the ZIP belongs to.
+   */
+  places?: string[];
   /** Catalog cause slug — omitted means every cause. */
   cause?: string;
   /** Only events whose official action date is within the last N days. */
@@ -167,6 +172,13 @@ export async function listMovementEvents(
     if (!e.isPublished) return false;
     if (filter.digestWorthyOnly && !e.isDigestWorthy) return false;
     if (filter.place && !e.placeKeys.includes(filter.place as never)) {
+      return false;
+    }
+    if (
+      filter.places &&
+      filter.places.length > 0 &&
+      !filter.places.some((p) => e.placeKeys.includes(p as never))
+    ) {
       return false;
     }
     if (filter.cause && !e.causeSlugs.includes(filter.cause)) return false;
