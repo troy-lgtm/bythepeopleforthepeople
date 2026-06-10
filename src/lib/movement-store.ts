@@ -204,6 +204,14 @@ export async function getMovementEvent(
   return baselineMovementEvents().find((e) => e.id === id) ?? null;
 }
 
+/** Full movement history for one record, newest first (receipt timelines). */
+export async function listMovementsForRecord(
+  recordId: string,
+): Promise<MovementEvent[]> {
+  const all = await listMovementEvents({});
+  return all.filter((e) => e.recordId === recordId);
+}
+
 export async function movementCounts(): Promise<{
   total: number;
   detected: number;
