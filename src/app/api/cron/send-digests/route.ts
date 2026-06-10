@@ -1,13 +1,19 @@
 import { type NextRequest } from "next/server";
 import { jsonError, jsonOk, timingSafeEqualStr } from "@/lib/api";
-import { buildDigest, renderDigestHtml, renderDigestText } from "@/lib/digest";
+import { logDigest } from "@/lib/digest-log";
 import { emailConfigured, sendEmail } from "@/lib/email";
+import {
+  buildMovementDigest,
+  renderMovementDigestHtml,
+  renderMovementDigestText,
+} from "@/lib/movement-digest";
+import { siteBaseUrl } from "@/lib/site-url";
 import { isStoreConfigured, listConfirmed, markSent } from "@/lib/subscribers";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-const BASE = "https://bythepeopleforthepeople.com";
+const BASE = siteBaseUrl();
 const MAX_PER_RUN = 100;
 
 /**
@@ -50,6 +56,7 @@ async function handle(request: NextRequest) {
   let sent = 0;
   let skipped = 0;
   let failed = 0;
+  let blocked = 0;
   const errors: string[] = [];
   let capped = false;
 
@@ -68,20 +75,53 @@ async function handle(request: NextRequest) {
     }
 
     const unsubUrl = `${BASE}/api/unsubscribe?token=${encodeURIComponent(sub.token)}`;
-    const payload = buildDigest({ zip: sub.zip, causes: sub.causes });
+    const manageUrl = `${BASE}/watchlist/manage?token=${encodeURIComponent(sub.token)}`;
+    const digest = await buildMovementDigest({
+      email: sub.email,
+      zip: sub.zip,
+      causes: sub.causes,
+      periodDays: sub.cadence === "daily" ? 1 : 7,
+      now,
+    });
+    // Daily cadence with zero movement: skip the send entirely. Quiet days
+    // earn silence, not filler. Weekly always sends (the honest quiet note).
+    if (sub.cadence === "daily" && digest.totalMovements === 0) {
+      skipped++;
+      continue;
+    }
     const result = await sendEmail({
       to: sub.email,
-      subject: payload.forZip
-        ? `Your civic-records digest · ${payload.forZip}`
-        : "Your civic-records digest",
-      html: renderDigestHtml(payload, BASE, { unsubscribeUrl: unsubUrl }),
-      text: renderDigestText(payload, BASE, { unsubscribeUrl: unsubUrl }),
+      subject: digest.subject,
+      html: renderMovementDigestHtml(digest, BASE, {
+        unsubscribeUrl: unsubUrl,
+        manageUrl,
+      }),
+      text: renderMovementDigestText(digest, BASE, {
+        unsubscribeUrl: unsubUrl,
+        manageUrl,
+      }),
       listUnsubscribeUrl: unsubUrl,
+      metadata: { template: "movement-digest", trigger: "cron" },
+    });
+
+    await logDigest({
+      email: sub.email,
+      zip: sub.zip,
+      subject: digest.subject,
+      itemCount: digest.totalMovements,
+      status: result.ok ? "sent" : result.blocked ? "blocked" : "failed",
+      trigger: "cron",
+      providerId: result.id,
+      error: result.error,
+      at: now.toISOString(),
     });
 
     if (result.ok) {
       sent++;
       await markSent(sub.email, now.toISOString());
+    } else if (result.blocked) {
+      // Guard refusal (private test mode): logged by the guard, counted here.
+      blocked++;
     } else {
       failed++;
       if (errors.length < 5) errors.push(`${sub.email}: ${result.error}`);
@@ -95,6 +135,7 @@ async function handle(request: NextRequest) {
     sent,
     skipped,
     failed,
+    blocked,
     capped,
     errors,
   });
