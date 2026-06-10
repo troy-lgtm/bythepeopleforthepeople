@@ -5,16 +5,14 @@ import { CAUSE_CATALOG } from "@/lib/cause-catalog";
 import { listMovementEvents } from "@/lib/movement-store";
 import { zipToPlace } from "@/lib/place-catalog";
 
-export const revalidate = 300;
-export const dynamicParams = true;
+// ZIP pages render on demand, matching the sibling /gov/[zip] page. An empty
+// generateStaticParams here made on-demand ISR renders throw
+// DYNAMIC_SERVER_USAGE in production.
+export const dynamic = "force-dynamic";
 
 const PERIOD_DAYS = 30;
 
 type PageProps = { params: Promise<{ zip: string }> };
-
-export function generateStaticParams(): Array<{ zip: string }> {
-  return [];
-}
 
 export async function generateMetadata({
   params,

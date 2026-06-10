@@ -125,8 +125,6 @@ export default async function LaunchCenterPage({
     (c) => c.required && c.status === "fail",
   ).length;
 
-  const keyParam = encodeURIComponent(key ?? "");
-
   return (
     <PageShell>
       <section className="border-b border-record-200 bg-white">
@@ -371,10 +369,10 @@ export default async function LaunchCenterPage({
               Begin public organic launch
             </h3>
             <p className="mt-1 text-sm leading-6 text-ink-700">
-              The future button. It flips launch state to "launched" so the
-              public growth surfaces activate. It still never emails anyone by
-              itself — public digests start only when real people subscribe
-              and confirm.
+              The future button. It flips launch state to &ldquo;launched&rdquo;
+              so the public growth surfaces activate. It still never emails
+              anyone by itself — public digests start only when real people
+              subscribe and confirm.
             </p>
             <form method="POST" action="/api/admin/launch/begin-public" className="mt-3">
               <input type="hidden" name="key" value={key} />
