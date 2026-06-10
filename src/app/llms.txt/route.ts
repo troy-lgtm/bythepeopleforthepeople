@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { bills, localDecisions, sourceRecords } from "@/data/records";
 import { topicProfiles, sourceConnectors } from "@/data/product-loop";
+import { CAUSE_CATALOG } from "@/lib/cause-catalog";
 
 const BASE = "https://bythepeopleforthepeople.com";
 
@@ -54,9 +55,35 @@ export async function GET() {
   });
   lines.push("");
 
+  lines.push("## What moved (movement feeds with receipts)");
+  lines.push(
+    `- [What moved in government](${BASE}/what-moved): every official action from indexed records, each with a receipt page and primary source.`,
+  );
+  lines.push(
+    `- Place feeds: ${BASE}/what-moved/la and ${BASE}/what-moved/ca. ZIP feeds: ${BASE}/gov/{zip}/what-moved.`,
+  );
+  lines.push(
+    `- Civic receipts: ${BASE}/receipts/{movementId} show what changed, why it matters, the evidence stack, timeline, and responsible body.`,
+  );
+  lines.push("");
+
+  lines.push("## Causes (canonical issue pages)");
+  CAUSE_CATALOG.forEach((c) => {
+    lines.push(`- [${c.name}](${BASE}/causes/${c.slug}): ${c.description}`);
+  });
+  lines.push(
+    `- Place-scoped cause pages: ${BASE}/causes/{cause}/{place} and ${BASE}/causes/{cause}/{place}/this-week (place = la, ca, or a 5-digit ZIP).`,
+  );
+  lines.push("");
+
   lines.push("## API");
   lines.push(`- Records index: ${BASE}/api/records`);
   lines.push(`- Record detail: ${BASE}/api/records/{slug}`);
+  lines.push(`- Latest movement: ${BASE}/api/civic-records/latest`);
+  lines.push(`- Movement by place: ${BASE}/api/civic-records/place/{place}`);
+  lines.push(`- Movement by cause: ${BASE}/api/civic-records/cause/{cause}`);
+  lines.push(`- Receipt detail: ${BASE}/api/civic-records/receipts/{id}`);
+  lines.push(`- ZIP government summary: ${BASE}/api/civic-records/gov/{zip}`);
   lines.push(`- Sources and connectors: ${BASE}/api/sources`);
   lines.push(`- Topics: ${BASE}/api/topics`);
   lines.push(`- Cited answers: ${BASE}/api/answers`);

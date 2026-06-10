@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { bills, localDecisions, sourceRecords } from "@/data/records";
 import { sourceConnectors, topicProfiles } from "@/data/product-loop";
+import { CAUSE_CATALOG } from "@/lib/cause-catalog";
+import { baselineMovementEvents } from "@/lib/movement-baseline";
 
 const BASE = "https://bythepeopleforthepeople.com";
 
@@ -19,14 +21,28 @@ export async function GET() {
     endpoints: {
       recordsIndex: `${BASE}/api/records`,
       recordDetail: `${BASE}/api/records/{slug}`,
+      latestMovements: `${BASE}/api/civic-records/latest`,
+      movementsByPlace: `${BASE}/api/civic-records/place/{place}`,
+      movementsByCause: `${BASE}/api/civic-records/cause/{cause}`,
+      receiptDetail: `${BASE}/api/civic-records/receipts/{id}`,
+      zipGovernment: `${BASE}/api/civic-records/gov/{zip}`,
       sources: `${BASE}/api/sources`,
       topics: `${BASE}/api/topics`,
       answers: `${BASE}/api/answers`,
       llms: `${BASE}/llms.txt`,
     },
+    humanSurfaces: {
+      whatMoved: `${BASE}/what-moved`,
+      receipts: `${BASE}/receipts/{movementId}`,
+      causes: `${BASE}/causes/{cause}`,
+      causeByPlace: `${BASE}/causes/{cause}/{place}`,
+      zipWhatMoved: `${BASE}/gov/{zip}/what-moved`,
+    },
     counts: {
       bills: bills.length,
       localDecisions: localDecisions.length,
+      movementEvents: baselineMovementEvents().length,
+      causes: CAUSE_CATALOG.length,
       topics: topicProfiles.length,
       sources: sourceRecords.length,
       connectors: sourceConnectors.length,
