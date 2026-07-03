@@ -109,7 +109,15 @@ export async function detectAndStoreMovements(
   if (opts.includeLive !== false) {
     // Lazy import keeps the pure differ path free of connector concerns.
     const { fetchLiveSnapshots } = await import("./live-ingest");
-    const live = await fetchLiveSnapshots();
+    // Refresh sweep window: since the last run (minus a 2-day safety
+    // overlap), or 14 days on the first live run.
+    const prior = await lastDetectionRun();
+    const updatedSince = prior
+      ? new Date(new Date(prior.ranAt).getTime() - 2 * 86_400_000)
+          .toISOString()
+          .slice(0, 10)
+      : undefined;
+    const live = await fetchLiveSnapshots({ updatedSince });
     liveStats = {
       configured: live.configured,
       tracked: live.tracked,

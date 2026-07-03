@@ -32,7 +32,9 @@ const CA_SESSION = "20252026";
 const TRACKED_KEY = "live:tracked";
 const TRACKED_CAP = 40;
 const DISCOVER_PER_QUERY = 3;
-const REQUEST_GAP_MS = 1100; // stay far under the Open States rate limit
+// Open States free keys allow ~10 requests/minute. The whole run is designed
+// to fit in ~12 requests: 1-2 updated_since sweeps + 10 discovery queries.
+const REQUEST_GAP_MS = 6500;
 
 /** One deterministic discovery query per catalog cause. */
 export const DISCOVERY_QUERIES: Array<{ causeSlug: string; q: string }> = [
@@ -262,11 +264,15 @@ export type LiveIngestResult = {
 };
 
 /**
- * Fetch live snapshots: refresh every tracked bill, then discover new
- * current-session bills per cause query. Bounded, paced, and isolated —
- * a failing request never takes down the run.
+ * Fetch live snapshots: sweep recently-updated bills in one paged query
+ * (only changed bills need refreshing), then discover new current-session
+ * bills per cause query. Bounded, paced, and isolated — a failing request
+ * never takes down the run.
  */
-export async function fetchLiveSnapshots(): Promise<LiveIngestResult> {
+export async function fetchLiveSnapshots(opts?: {
+  /** ISO date; refresh sweep covers bills updated since then. */
+  updatedSince?: string;
+}): Promise<LiveIngestResult> {
   const result: LiveIngestResult = {
     configured: liveIngestConfigured(),
     snapshots: [],
@@ -282,20 +288,33 @@ export async function fetchLiveSnapshots(): Promise<LiveIngestResult> {
   const byRecordId = new Map(tracked.map((t) => [t.recordId, t]));
   const seenThisRun = new Set<string>();
 
-  // 1. Refresh tracked bills by their Open States id.
-  for (const entry of tracked) {
-    try {
-      const data = (await osFetch(
-        `/bills/${encodeURIComponent(entry.osId)}?include=actions&include=sources`,
-      )) as OpenStatesBill | null;
-      if (data) {
-        const snap = snapshotFromOpenStatesBill(data);
-        result.snapshots.push(snap);
-        seenThisRun.add(snap.recordId);
-        result.refreshed++;
+  // 1. Refresh: one updated_since sweep instead of a request per tracked
+  //    bill. Unchanged bills need no refresh by definition; their stored
+  //    version stands. Two pages of 20 covers a very active day.
+  if (tracked.length > 0) {
+    const since =
+      opts?.updatedSince ??
+      new Date(Date.now() - 14 * 86_400_000).toISOString().slice(0, 10);
+    for (let page = 1; page <= 2; page++) {
+      try {
+        const data = (await osFetch(
+          `/bills?jurisdiction=${encodeURIComponent(CA_JURISDICTION)}&session=${CA_SESSION}&updated_since=${since}&sort=updated_desc&include=actions&include=sources&per_page=20&page=${page}`,
+        )) as { results?: OpenStatesBill[] } | null;
+        const results = data?.results ?? [];
+        for (const bill of results) {
+          const recordId = `os-ca-${normalizeIdentifier(bill.identifier)}`;
+          if (!byRecordId.has(recordId) || seenThisRun.has(recordId)) continue;
+          const snap = snapshotFromOpenStatesBill(bill);
+          result.snapshots.push(snap);
+          seenThisRun.add(recordId);
+          result.refreshed++;
+        }
+        if (results.length < 20) break; // no further pages
+      } catch (err) {
+        result.errors.push(err instanceof Error ? err.message : String(err));
+        break;
       }
-    } catch (err) {
-      result.errors.push(err instanceof Error ? err.message : String(err));
+      await sleep(REQUEST_GAP_MS);
     }
     await sleep(REQUEST_GAP_MS);
   }
