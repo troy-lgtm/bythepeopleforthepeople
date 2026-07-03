@@ -174,6 +174,23 @@ export async function detectAndStoreMovements(
     } satisfies StoredRecordVersion);
   }
 
+  // Self-heal one known-bad historical shape: early first-indexed events
+  // were titled "<label> was introduced" (the type template) even when the
+  // bill's real introduction was months earlier. Rewrite them to the honest
+  // "is now indexed" headline. Idempotent and cheap.
+  const stored = await listStoredMovements();
+  for (const event of stored) {
+    if (
+      event.id.includes("-first-indexed-") &&
+      event.title.endsWith(" was introduced")
+    ) {
+      await saveMovementEvent({
+        ...event,
+        title: `${event.title.replace(/ was introduced$/, "")} is now indexed`,
+      });
+    }
+  }
+
   const run: DetectionRun = {
     ranAt: detectedAt,
     recordsChecked: snapshots.length,

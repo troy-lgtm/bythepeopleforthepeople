@@ -56,11 +56,14 @@ test.describe("movement differ", () => {
     expect(detectMovements(snap, snap, detectedAt)).toEqual([]);
   });
 
-  test("new record emits new_record", () => {
+  test("new record emits an honest first-indexed event", () => {
     const snap = snapshotFromBill(bills[0]);
     const events = detectMovements(null, snap, detectedAt);
     expect(events).toHaveLength(1);
     expect(events[0].movementType).toBe("new_record");
+    // First sight mid-life must say "indexed", never "introduced".
+    expect(events[0].title).toContain("is now indexed");
+    expect(events[0].title).not.toContain("was introduced");
   });
 
   test("status change emits status_changed", () => {

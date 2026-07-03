@@ -435,6 +435,8 @@ function makeMovement(opts: {
   origin: "baseline" | "detected";
   extraCauseText?: string;
   responsibleBody?: string;
+  /** Overrides the type template when it would misstate the event. */
+  titleOverride?: string;
 }): MovementEvent {
   const { snap } = opts;
   const primaryEvidence = opts.evidence[0];
@@ -449,7 +451,7 @@ function makeMovement(opts: {
     placeKeys: placeKeysForJurisdiction(snap.jurisdiction),
     causeSlugs: causesForMovement(snap, opts.extraCauseText ?? opts.summary),
     movementType: opts.type,
-    title: movementHeadline(opts.type, snap),
+    title: opts.titleOverride ?? movementHeadline(opts.type, snap),
     plainEnglishSummary: opts.summary,
     whyItMatters: movementWhyItMatters(opts.type),
     responsibleBody: opts.responsibleBody ?? snap.jurisdiction,
@@ -505,11 +507,15 @@ export function detectMovements(
   const day = detectedAt.slice(0, 10);
 
   if (!prev) {
+    // First sight of a record mid-life: the honest headline is "now indexed",
+    // not "was introduced" — introduction may be months in the past and gets
+    // its own correctly dated event from the record's timeline.
     events.push(
       makeMovement({
         id: `mv-${next.recordId}-first-indexed-${contentHash(next.hash)}`,
         snap: next,
         type: "new_record",
+        titleOverride: `${shortRecordLabel(next.title)} is now indexed`,
         summary: `${next.title} is now indexed with ${next.sourceIds.length} official sources. Current status: ${next.status}.`,
         evidence: buildEvidence(
           next,
