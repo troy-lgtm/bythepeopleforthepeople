@@ -6,6 +6,7 @@ import {
   snapshotFromOpenStatesBill,
   timelineTypeForAction,
 } from "@/lib/live-ingest";
+import { serializeMovement } from "@/lib/civic-records-api";
 import {
   detectMovements,
   movementFromTimelineEvent,
@@ -108,6 +109,14 @@ test.describe("live ingest mapping", () => {
   test("recordHref for live snapshots points at the official record", () => {
     const snap = snapshotFromOpenStatesBill(FIXTURE);
     expect(recordHref(snap)).toContain("leginfo.legislature.ca.gov");
+  });
+
+  test("API serialization never double-prefixes live record URLs", () => {
+    const snap = snapshotFromOpenStatesBill(FIXTURE);
+    const event = movementFromTimelineEvent(snap, snap.timeline[0], "detected");
+    const wire = serializeMovement(event);
+    expect(wire.recordUrl).toMatch(/^https?:\/\/leginfo/);
+    expect(wire.recordUrl).not.toContain(".comhttp");
   });
 
   test("timeline events become sourced, confirmed movements", () => {

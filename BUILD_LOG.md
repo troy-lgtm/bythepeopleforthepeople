@@ -181,3 +181,32 @@ Newest entry last. One entry per loop.
   States key's validity is verified by the run result itself (surfaced in
   the Launch Center, isolated on failure).
 - Next: prod end-to-end (seed Troy, run detection, send the test digest).
+
+## Launch prep — production end-to-end (2026-07-03)
+
+- What changed and ran, in order: PR 20 merged + deployed (vercel --prod
+  from the synced main checkout — this repo has NO GitHub auto-deploy);
+  production env set (ADMIN_LAUNCH_SECRET + explicit safety flags); prod
+  gate verified (stranger subscribe → private_pilot, attempt audit-logged);
+  PR 21 live ingest merged + deployed; first prod detection run discovered
+  and tracked 29 current-session CA bills → 150 real movement events
+  (amendments, referrals, votes, advances with true official dates);
+  PR 22 fixed first-indexed headlines ("is now indexed", never
+  "was introduced") with a self-healing pass for stored events; PR 23
+  replaced per-bill refresh with one updated_since sweep after the
+  ~10/min Open States limit produced 5 errors at 29 tracked bills
+  (clean 0-error run after); Troy seeded on the prod store via the new
+  admin route; REAL test digest delivered to troy@wearewarp.com
+  ("Government moved on homelessness and housing. Here are the
+  receipts."); prod Launch Center shows ALL REQUIRED CHECKS PASS,
+  1 digest sent (to the test user only), 1 blocked attempt logged (the
+  gate test), PRIVATE TEST MODE on. Fixed API recordUrl double-prefix
+  for live records.
+- Tests run: 50 unit + 25 smoke green locally; prod verified end to end
+  via the admin routes and public API.
+- Known issues: prod detection currently triggers via the Launch Center
+  button or the daily cron (cron needs a real CRON_SECRET value — it is
+  set in Vercel; value is write-only so unverified from here, and the
+  cron result will confirm on its first 9:30 UTC run).
+- Next: Troy walks the loop; live ingest breadth (more causes/sessions,
+  LA Council files) when ready.

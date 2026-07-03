@@ -42,7 +42,10 @@ export function serializeMovement(event: MovementEvent): ApiMovement {
   return {
     id: event.id,
     recordId: event.recordId,
-    recordUrl: `${BASE}${event.recordHref}`,
+    // Live records carry an absolute official-record URL already.
+    recordUrl: event.recordHref.startsWith("http")
+      ? event.recordHref
+      : `${BASE}${event.recordHref}`,
     recordTitle: event.recordTitle,
     jurisdiction: event.jurisdiction,
     places: event.placeKeys,
