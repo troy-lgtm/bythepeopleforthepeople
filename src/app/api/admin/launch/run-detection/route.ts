@@ -3,7 +3,8 @@ import { isValidAdminKey } from "@/lib/admin-auth";
 import { detectAndStoreMovements, movementCounts } from "@/lib/movement-store";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
+// Same headroom as the cron: the paced live-ingest run takes ~90-120s.
+export const maxDuration = 300;
 
 function back(request: NextRequest, key: string, notice: string, tone = "ok") {
   const url = new URL("/admin/launch", request.nextUrl.origin);

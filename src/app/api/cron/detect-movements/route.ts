@@ -4,7 +4,9 @@ import { detectAndStoreMovements, movementCounts } from "@/lib/movement-store";
 import { storeMode } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
+// Paced Open States requests (~10/min limit) need headroom: the full run is
+// ~12 requests with 6.5s gaps, plus store writes.
+export const maxDuration = 300;
 
 /**
  * Vercel Cron: snapshot every indexed record, diff against the stored
