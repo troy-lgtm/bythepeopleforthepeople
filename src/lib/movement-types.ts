@@ -113,6 +113,10 @@ export type RecordSnapshot = {
   sources: Record<string, SnapshotSource>;
   primaryUrl: string;
   hash: string;
+  /** True for live-ingested records (no hand-curated internal page yet). */
+  live?: boolean;
+  /** Official record URL used instead of an internal page for live records. */
+  externalRecordUrl?: string;
 };
 
 /** FNV-1a 32-bit — stable, dependency-free content hash for change detection. */
@@ -211,7 +215,13 @@ export function snapshotFromLocalDecision(d: LocalDecision): RecordSnapshot {
   });
 }
 
+/**
+ * Where "open the full record" points. Curated records have internal pages;
+ * live-ingested records link straight to the official record system —
+ * honest, and never a dead internal link.
+ */
 export function recordHref(snap: RecordSnapshot): string {
+  if (snap.live && snap.externalRecordUrl) return snap.externalRecordUrl;
   return snap.recordType === "bill" ? `/bills/${snap.slug}` : `/local/${snap.slug}`;
 }
 

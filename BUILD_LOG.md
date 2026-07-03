@@ -151,3 +151,33 @@ Newest entry last. One entry per loop.
   labeled everywhere); municipal rep lookup still needs CICERO_API_KEY;
   detected (post-baseline) receipts join the sitemap on rebuild only.
 - Next: hand off to Troy for private testing.
+
+## Loop 11 — Live ingest connector (Open States) + launch prep
+
+- What changed: live CA bill connector on the Open States v3 API
+  (src/lib/live-ingest.ts): refreshes tracked bills by id, discovers
+  current-session bills with one deterministic query per catalog cause,
+  maps official actions to record snapshots (LegInfo source labeled
+  Official record, aggregator page labeled Derived summary), skips bills
+  already hand-curated, caps tracking at 40, paces requests. Detection now
+  ingests live snapshots; first sight of a live record emits an honest
+  new_record plus its last-30-days official actions, dated by the record.
+  Live records link receipts to the official record system (no dead
+  internal links). Launch Center gains Run Detection and Seed Test User
+  buttons (admin-key gated; neither sends anything) plus live-ingest
+  status. Shipped PR 20 (squash-merged), deployed to production via
+  vercel --prod, set production env: ADMIN_LAUNCH_SECRET + explicit safety
+  flags (PRIVATE_TEST_MODE=true, allows false, TEST_USER_EMAIL).
+- Files touched: src/lib/live-ingest.ts, movement-types.ts (live/external
+  record fields), movement-store.ts (live-aware detection + run stats),
+  receipts page (external record CTA), admin launch page + 2 new admin
+  routes, detect-movements script, tests/unit/live-ingest.spec.ts.
+- Tests run: 74/74 (49 unit incl. 7 live-ingest fixture specs, 25 smoke);
+  lint, typecheck, env-less build clean. Prod verified: stranger subscribe
+  returns private_pilot on bythepeopleforthepeople.com; Launch Center
+  authenticates and shows PRIVATE TEST MODE.
+- Known issues: production env values are write-only (sensitive), so
+  operator actions on prod go through the admin-key routes; the Open
+  States key's validity is verified by the run result itself (surfaced in
+  the Launch Center, isolated on failure).
+- Next: prod end-to-end (seed Troy, run detection, send the test digest).

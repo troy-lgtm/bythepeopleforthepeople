@@ -19,6 +19,15 @@ async function main() {
   console.log(`  records checked: ${run.recordsChecked}`);
   console.log(`  records changed: ${run.recordsChanged}`);
   console.log(`  new events:      ${run.newEvents}`);
+  if (run.liveConfigured === false) {
+    console.log(
+      "  live ingest:     skipped (OPENSTATES_API_KEY unset) — curated records only",
+    );
+  } else if (run.liveConfigured) {
+    console.log(
+      `  live ingest:     ${run.liveTracked} tracked, ${run.liveDiscovered} discovered, ${run.liveRefreshed} refreshed${run.liveErrors?.length ? `, errors: ${run.liveErrors.join(" | ")}` : ""}`,
+    );
+  }
   if (run.firstRun) {
     console.log(
       "  note: first run stores versions as the baseline; diffs emit from the next run on.",
