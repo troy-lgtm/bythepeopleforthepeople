@@ -12,10 +12,13 @@ import {
   Pencil,
   Share2,
 } from "lucide-react";
+import { CatalogCauseView } from "@/components/CatalogCauseView";
 import { CauseDeleteButton } from "@/components/CauseDeleteButton";
 import { CausePublishPanel } from "@/components/CausePublishPanel";
 import { PageShell } from "@/components/PageShell";
 import { SectionHeader } from "@/components/SectionHeader";
+import { getCatalogCause } from "@/lib/cause-catalog";
+import { listMovementEvents } from "@/lib/movement-store";
 import { buildCauseActivity } from "@/lib/cause-activity";
 import { encodeCauseForPublish } from "@/lib/cause-encoding";
 import { looseMatches, matchCause, matchCount } from "@/lib/cause-matcher";
@@ -35,6 +38,16 @@ export async function generateMetadata({
   params,
 }: CausePageProps): Promise<Metadata> {
   const { id } = await params;
+  // Canonical catalog causes (e.g. /causes/homelessness) are public and
+  // indexable; user-authored causes below stay private (noindex).
+  const catalog = getCatalogCause(id);
+  if (catalog) {
+    return {
+      title: `${catalog.name}: what government is doing`,
+      description: catalog.description,
+      alternates: { canonical: `/causes/${catalog.slug}` },
+    };
+  }
   const cause = await readCauseById(id);
   if (!cause) return { title: "Cause not found" };
   const matches = matchCause(cause);
@@ -69,6 +82,16 @@ export async function generateMetadata({
 
 export default async function CausePage({ params }: CausePageProps) {
   const { id } = await params;
+  // Catalog slugs render the public cause page; anything else resolves as a
+  // private user cause from the browser's own storage.
+  const catalog = getCatalogCause(id);
+  if (catalog) {
+    const events = await listMovementEvents({
+      cause: catalog.slug,
+      limit: 20,
+    });
+    return <CatalogCauseView cause={catalog} events={events} />;
+  }
   const cause = await readCauseById(id);
   if (!cause) notFound();
   const causes = await readCauses();

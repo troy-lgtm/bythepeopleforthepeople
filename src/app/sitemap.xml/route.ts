@@ -6,6 +6,7 @@ const BASE = "https://bythepeopleforthepeople.com";
 const SECTIONS = [
   "sitemap-core.xml",
   "sitemap-records.xml",
+  "sitemap-movement.xml",
   "sitemap-federal.xml",
   "sitemap-state.xml",
   "sitemap-city.xml",

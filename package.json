@@ -9,7 +9,13 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test:smoke": "playwright test",
-    "test:install": "playwright install chromium --with-deps"
+    "test:unit": "UNIT_ONLY=1 playwright test --project=unit",
+    "test:install": "playwright install chromium --with-deps",
+    "seed:test-user": "npx tsx scripts/seed-test-user.ts",
+    "digest:test": "npx tsx scripts/send-test-digest.ts",
+    "launch:check": "npx tsx scripts/launch-check.ts",
+    "movements:detect": "npx tsx scripts/detect-movements.ts",
+    "demo": "bash scripts/demo-local.sh"
   },
   "dependencies": {
     "@upstash/redis": "^1.38.0",

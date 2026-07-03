@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight, Bell, Plus, Sparkles } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { SectionHeader } from "@/components/SectionHeader";
+import { CAUSE_CATALOG } from "@/lib/cause-catalog";
 import { matchCause, matchCount } from "@/lib/cause-matcher";
 import { readCauses } from "@/lib/causes";
 import { STARTER_CAUSES } from "@/data/starter-causes";
@@ -136,6 +137,38 @@ export default async function CausesIndexPage() {
             })}
           </ul>
         )}
+      </section>
+
+      {/* Canonical issues with public pages and movement feeds */}
+      <section className="border-t border-record-200 bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+          <SectionHeader
+            eyebrow="Browse by issue"
+            title="The issues we watch out of the box."
+            description="Each one has a public page with everything that moved, by place. Pick one and watch it, no setup needed."
+          />
+          <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {CAUSE_CATALOG.map((c) => (
+              <li key={c.slug}>
+                <Link
+                  href={`/causes/${c.slug}`}
+                  className="block rounded-lg border border-record-200 bg-white p-4 shadow-line transition hover:border-civic-500 hover:bg-paper-50"
+                >
+                  <h3 className="text-base font-semibold text-ink-950">
+                    {c.name}
+                  </h3>
+                  <p className="mt-1.5 line-clamp-2 text-sm leading-6 text-ink-700">
+                    {c.description}
+                  </p>
+                  <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-civic-700">
+                    What moved
+                    <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
 
       <section className="border-t border-record-200 bg-white">

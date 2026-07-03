@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@/components/Analytics";
+import { RefTracker } from "@/components/RefTracker";
 import { JsonLd } from "@/components/JsonLd";
 import { organizationSchema, websiteSchema } from "@/lib/schema";
 import "./globals.css";
@@ -96,6 +97,7 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         {children}
         <Analytics />
+        <RefTracker />
         <JsonLd data={[websiteSchema(), organizationSchema()]} />
       </body>
     </html>

@@ -3,11 +3,13 @@ import { jsonError, jsonOk } from "@/lib/api";
 import { readCauses } from "@/lib/causes";
 import { readPlace } from "@/lib/place";
 import { EMAIL_RE, emailConfigured, sendEmail } from "@/lib/email";
+import { isTestUserEmail, launchFlags } from "@/lib/launch-mode";
+import { assertCanNotifyRecipient } from "@/lib/notification-guard";
+import { siteBaseUrl } from "@/lib/site-url";
 import {
   type Cadence,
   type Subscriber,
   getSubscriber,
-  isStoreConfigured,
   newToken,
   rateLimit,
   upsertSubscriber,
@@ -15,19 +17,11 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const BASE = "https://bythepeopleforthepeople.com";
 const RL_MAX = 3;
 const RL_WINDOW_SECONDS = 60;
 
 export async function POST(request: NextRequest) {
-  if (!isStoreConfigured()) {
-    return jsonError(
-      503,
-      "store_not_configured",
-      "The subscriber store is not configured yet. Provision the Redis store to enable email subscriptions.",
-    );
-  }
-
+  const BASE = siteBaseUrl();
   const body = (await request.json().catch(() => ({}))) as {
     email?: string;
     cadence?: string;
@@ -43,6 +37,21 @@ export async function POST(request: NextRequest) {
       "consent_required",
       "Explicit consent is required to subscribe.",
     );
+  }
+
+  // Private-pilot gate. While private test mode is on, only the designated
+  // test user can join the list. Nothing is stored and nothing is sent for
+  // anyone else; the attempt is logged by the guard for the Launch Center.
+  const gate = await assertCanNotifyRecipient(body.email, "email", {
+    payloadSummary: "subscribe_attempt",
+  });
+  if (!gate.allowed) {
+    return jsonOk({
+      status: "private_pilot",
+      confirmed: false,
+      message:
+        "Private test mode is active. This pilot is currently limited to the test user. Public signups open at launch.",
+    });
   }
 
   // Best-effort rate limit per address (no-op when Redis is unconfigured).
@@ -76,6 +85,9 @@ export async function POST(request: NextRequest) {
     createdAt: existing?.createdAt ?? new Date().toISOString(),
     confirmedAt: existing?.confirmedAt,
     lastSentAt: existing?.lastSentAt,
+    lastSeenMovementAt: existing?.lastSeenMovementAt,
+    isTestUser: isTestUserEmail(body.email, launchFlags()),
+    source: existing?.source ?? "site",
   };
   await upsertSubscriber(sub);
 

@@ -1,11 +1,17 @@
 import { type NextRequest } from "next/server";
-import { buildDigest, renderDigestHtml, renderDigestText } from "@/lib/digest";
+import { logDigest } from "@/lib/digest-log";
 import { emailConfigured, sendEmail } from "@/lib/email";
+import {
+  buildMovementDigest,
+  renderMovementDigestHtml,
+  renderMovementDigestText,
+} from "@/lib/movement-digest";
 import { confirmByToken } from "@/lib/subscribers";
+import { siteBaseUrl } from "@/lib/site-url";
 
 export const dynamic = "force-dynamic";
 
-const BASE = "https://bythepeopleforthepeople.com";
+const BASE = siteBaseUrl();
 
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get("token") ?? "";
@@ -23,21 +29,43 @@ export async function GET(request: NextRequest) {
   // Send the first digest immediately as the welcome.
   if (emailConfigured()) {
     const unsubUrl = `${BASE}/api/unsubscribe?token=${encodeURIComponent(sub.token)}`;
-    const payload = buildDigest({ zip: sub.zip, causes: sub.causes });
-    await sendEmail({
+    const manageUrl = `${BASE}/watchlist/manage?token=${encodeURIComponent(sub.token)}`;
+    const digest = await buildMovementDigest({
+      email: sub.email,
+      zip: sub.zip,
+      causes: sub.causes,
+    });
+    const result = await sendEmail({
       to: sub.email,
-      subject: payload.forZip
-        ? `Your civic-records digest · ${payload.forZip}`
-        : "Your civic-records digest",
-      html: renderDigestHtml(payload, BASE, { unsubscribeUrl: unsubUrl }),
-      text: renderDigestText(payload, BASE, { unsubscribeUrl: unsubUrl }),
+      subject: digest.subject,
+      html: renderMovementDigestHtml(digest, BASE, {
+        unsubscribeUrl: unsubUrl,
+        manageUrl,
+      }),
+      text: renderMovementDigestText(digest, BASE, {
+        unsubscribeUrl: unsubUrl,
+        manageUrl,
+      }),
       listUnsubscribeUrl: unsubUrl,
+      metadata: { template: "movement-digest", trigger: "confirm" },
+    });
+    await logDigest({
+      email: sub.email,
+      zip: sub.zip,
+      subject: digest.subject,
+      itemCount: digest.totalMovements,
+      status: result.ok ? "sent" : result.blocked ? "blocked" : "failed",
+      trigger: "confirm",
+      providerId: result.id,
+      error: result.error,
+      at: new Date().toISOString(),
     });
   }
 
+  const manageUrl = `/watchlist/manage?token=${encodeURIComponent(sub.token)}`;
   return htmlPage(
     "You're subscribed ✓",
-    `Confirmed for the <strong>${sub.cadence}</strong> digest${sub.zip ? ` for ${escapeHtml(sub.zip)}` : ""}. Your first digest is on its way. You can unsubscribe from any email in one click.`,
+    `Confirmed for the <strong>${sub.cadence}</strong> digest${sub.zip ? ` for ${escapeHtml(sub.zip)}` : ""}. Your first digest is on its way. You can unsubscribe from any email in one click.<br><br><a href="${manageUrl}" style="color:#175c55;font-weight:600;">Open your watchlist</a>`,
   );
 }
 
