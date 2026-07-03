@@ -266,13 +266,27 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
             What you can do
           </h2>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            <Link
-              href={event.recordHref}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-ink-950 px-4 text-sm font-semibold text-white hover:bg-ink-800"
-            >
-              <ScrollText className="h-4 w-4" aria-hidden="true" />
-              Open the full record
-            </Link>
+            {event.recordHref.startsWith("http") ? (
+              // Live-ingested record: the full record lives on the official
+              // system, so the primary action goes straight there.
+              <a
+                href={event.recordHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-ink-950 px-4 text-sm font-semibold text-white hover:bg-ink-800"
+              >
+                <ScrollText className="h-4 w-4" aria-hidden="true" />
+                Open the official record
+              </a>
+            ) : (
+              <Link
+                href={event.recordHref}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-ink-950 px-4 text-sm font-semibold text-white hover:bg-ink-800"
+              >
+                <ScrollText className="h-4 w-4" aria-hidden="true" />
+                Open the full record
+              </Link>
+            )}
             <a
               href={event.sourceUrl}
               target="_blank"

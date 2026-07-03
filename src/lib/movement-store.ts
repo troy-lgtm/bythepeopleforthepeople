@@ -6,6 +6,7 @@ import {
   type MovementEvent,
   type RecordSnapshot,
   detectMovements,
+  movementFromTimelineEvent,
 } from "./movement-types";
 import {
   kvGet,
@@ -44,6 +45,12 @@ export type DetectionRun = {
   recordsChanged: number;
   newEvents: number;
   firstRun: boolean;
+  /** Live ingest stats (Open States connector). */
+  liveConfigured?: boolean;
+  liveTracked?: number;
+  liveDiscovered?: number;
+  liveRefreshed?: number;
+  liveErrors?: string[];
 };
 
 export async function getStoredVersion(
@@ -75,16 +82,44 @@ export async function lastDetectionRun(): Promise<DetectionRun | null> {
 }
 
 /**
- * Snapshot every indexed record, diff against the stored version, persist
- * any movements, and update versions. The first run for a record stores its
- * version without emitting events — the baseline already covers indexed
- * history, so emitting here would double-report.
+ * Snapshot every indexed record (curated + live-ingested), diff against the
+ * stored version, persist any movements, and update versions.
+ *
+ * First-sight rules differ by origin, deliberately:
+ * - Curated records: store the version silently — the baseline already
+ *   derives their history, so emitting here would double-report.
+ * - Live records: emit a real new_record movement — entering the index IS
+ *   the movement, and their history was never in the baseline.
  */
 export async function detectAndStoreMovements(
   now = new Date(),
+  opts: { includeLive?: boolean } = {},
 ): Promise<DetectionRun> {
   const detectedAt = now.toISOString();
-  const snapshots = snapshotAllRecords();
+  const snapshots: RecordSnapshot[] = [...snapshotAllRecords()];
+
+  let liveStats: {
+    configured: boolean;
+    tracked: number;
+    discovered: number;
+    refreshed: number;
+    errors: string[];
+  } | null = null;
+
+  if (opts.includeLive !== false) {
+    // Lazy import keeps the pure differ path free of connector concerns.
+    const { fetchLiveSnapshots } = await import("./live-ingest");
+    const live = await fetchLiveSnapshots();
+    liveStats = {
+      configured: live.configured,
+      tracked: live.tracked,
+      discovered: live.discovered,
+      refreshed: live.refreshed,
+      errors: live.errors,
+    };
+    snapshots.push(...live.snapshots);
+  }
+
   let recordsChanged = 0;
   let newEvents = 0;
   let sawAnyVersion = false;
@@ -94,6 +129,26 @@ export async function detectAndStoreMovements(
     if (stored) sawAnyVersion = true;
 
     if (!stored) {
+      if (snap.live) {
+        const events = detectMovements(null, snap, detectedAt);
+        // Also surface the record's RECENT official actions (last 30 days),
+        // dated by the official record — discovering a bill that was amended
+        // last week should produce last week's amendment, honestly dated.
+        const recentCutoff = new Date(now.getTime() - 30 * 86_400_000)
+          .toISOString()
+          .slice(0, 10);
+        for (const entry of snap.timeline) {
+          if (entry.date >= recentCutoff) {
+            events.push(
+              movementFromTimelineEvent(snap, entry, "detected", detectedAt),
+            );
+          }
+        }
+        for (const event of events) {
+          await saveMovementEvent(event);
+          newEvents++;
+        }
+      }
       await kvSet(verKey(snap.recordId), {
         recordId: snap.recordId,
         versionHash: snap.hash,
@@ -125,6 +180,11 @@ export async function detectAndStoreMovements(
     recordsChanged,
     newEvents,
     firstRun: !sawAnyVersion,
+    liveConfigured: liveStats?.configured,
+    liveTracked: liveStats?.tracked,
+    liveDiscovered: liveStats?.discovered,
+    liveRefreshed: liveStats?.refreshed,
+    liveErrors: liveStats?.errors?.slice(0, 5),
   };
   await kvSet(LAST_RUN_KEY, run);
   return run;

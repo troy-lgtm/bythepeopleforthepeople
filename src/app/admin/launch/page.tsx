@@ -195,7 +195,13 @@ export default async function LaunchCenterPage({
             {
               label: "Last movement detection",
               value: run
-                ? `${run.ranAt.slice(0, 16)} · ${run.recordsChecked} records · ${run.newEvents} new events`
+                ? `${run.ranAt.slice(0, 16)} · ${run.recordsChecked} records · ${run.newEvents} new events${
+                    run.liveConfigured
+                      ? ` · live: ${run.liveTracked ?? 0} tracked, ${run.liveDiscovered ?? 0} discovered`
+                      : run.liveConfigured === false
+                        ? " · live ingest off (OPENSTATES_API_KEY unset)"
+                        : ""
+                  }`
                 : "Never run",
             },
             {
@@ -299,6 +305,49 @@ export default async function LaunchCenterPage({
           Actions
         </h2>
         <div className="mt-3 grid gap-4">
+          <div className="rounded-lg border border-record-200 bg-white p-5">
+            <h3 className="flex items-center gap-2 text-base font-semibold text-ink-950">
+              <CircleDashed className="h-4 w-4 text-civic-700" aria-hidden="true" />
+              Run movement detection now
+            </h3>
+            <p className="mt-1 text-sm leading-6 text-ink-700">
+              Snapshots every record (curated plus the live Open States
+              connector), diffs against stored versions, and persists any new
+              movement. Detection only; sends nothing.
+            </p>
+            <form method="POST" action="/api/admin/launch/run-detection" className="mt-3">
+              <input type="hidden" name="key" value={key} />
+              <button
+                type="submit"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-record-200 bg-white px-5 text-sm font-semibold text-ink-950 hover:border-civic-500"
+              >
+                Run detection
+              </button>
+            </form>
+          </div>
+
+          <div className="rounded-lg border border-record-200 bg-white p-5">
+            <h3 className="flex items-center gap-2 text-base font-semibold text-ink-950">
+              <CheckCircle2 className="h-4 w-4 text-civic-700" aria-hidden="true" />
+              Seed the test user watchlist
+            </h3>
+            <p className="mt-1 text-sm leading-6 text-ink-700">
+              Creates or refreshes the persistent watchlist for{" "}
+              {flags.testUserEmail} (ZIP 90046; homelessness, housing, fires,
+              crime, land use) against this deployment&apos;s store, marked
+              confirmed. Sends nothing.
+            </p>
+            <form method="POST" action="/api/admin/launch/seed-test-user" className="mt-3">
+              <input type="hidden" name="key" value={key} />
+              <button
+                type="submit"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-record-200 bg-white px-5 text-sm font-semibold text-ink-950 hover:border-civic-500"
+              >
+                Seed test user
+              </button>
+            </form>
+          </div>
+
           <div className="rounded-lg border border-record-200 bg-white p-5">
             <h3 className="flex items-center gap-2 text-base font-semibold text-ink-950">
               <Send className="h-4 w-4 text-civic-700" aria-hidden="true" />
