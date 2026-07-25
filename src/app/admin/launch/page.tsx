@@ -13,6 +13,7 @@ import { PageShell } from "@/components/PageShell";
 import { adminSecretConfigured, isValidAdminKey } from "@/lib/admin-auth";
 import { countDigestLog, listDigestLog } from "@/lib/digest-log";
 import { emailConfigured } from "@/lib/email";
+import { getGrowthMetrics } from "@/lib/growth-metrics";
 import {
   launchBlockers,
   launchFlags,
@@ -121,6 +122,7 @@ export default async function LaunchCenterPage({
   const blocked = await listBlockedNotifications(5);
   const digestEntries = await listDigestLog(5);
   const digestTotal = await countDigestLog();
+  const growth = await getGrowthMetrics(14);
   const failCount = checks.filter(
     (c) => c.required && c.status === "fail",
   ).length;
@@ -256,6 +258,76 @@ export default async function LaunchCenterPage({
             </ul>
           </details>
         ) : null}
+      </section>
+
+      {/* Growth signals */}
+      <section className="mx-auto max-w-5xl px-4 pb-8 sm:px-6">
+        <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-ink-600">
+          Growth signals (last {growth.days} days)
+        </h2>
+        <p className="mt-1 text-sm text-ink-700">
+          Which surface turns a visit into a watcher. Anonymous daily counts
+          only: no visitor ids, no cookies, no paths.{" "}
+          {growth.durable
+            ? null
+            : "Counters are in the ephemeral in-memory store, so they reset on redeploy."}
+        </p>
+        {growth.totals.visits === 0 && growth.totals.subscribes === 0 ? (
+          <p className="mt-3 rounded-lg border border-record-200 bg-white p-4 text-sm leading-6 text-ink-700">
+            No referral-tagged traffic counted yet. Tagged links
+            (<code className="text-xs">?ref=receipt</code>,{" "}
+            <code className="text-xs">?ref=digest</code>,{" "}
+            <code className="text-xs">?ref=embed</code>) start filling this in
+            as soon as they are clicked.
+          </p>
+        ) : (
+          <div className="mt-3 overflow-x-auto rounded-lg border border-record-200 bg-white">
+            <table className="w-full min-w-[32rem] text-sm">
+              <thead>
+                <tr className="border-b border-record-200 text-left text-xs uppercase tracking-[0.1em] text-ink-600">
+                  <th scope="col" className="px-4 py-2.5 font-semibold">Surface</th>
+                  <th scope="col" className="px-4 py-2.5 text-right font-semibold">Visits</th>
+                  <th scope="col" className="px-4 py-2.5 text-right font-semibold">Subscribes</th>
+                  <th scope="col" className="px-4 py-2.5 text-right font-semibold">Confirmed</th>
+                  <th scope="col" className="px-4 py-2.5 text-right font-semibold">Conversion</th>
+                </tr>
+              </thead>
+              <tbody>
+                {growth.byRef.map((row) => (
+                  <tr key={row.ref} className="border-b border-record-200 last:border-0">
+                    <td className="px-4 py-2.5 font-semibold text-ink-950">{row.ref}</td>
+                    <td className="px-4 py-2.5 text-right tabular-nums text-ink-700">{row.visits}</td>
+                    <td className="px-4 py-2.5 text-right tabular-nums text-ink-700">{row.subscribes}</td>
+                    <td className="px-4 py-2.5 text-right tabular-nums text-ink-700">{row.confirms}</td>
+                    <td className="px-4 py-2.5 text-right tabular-nums text-ink-700">
+                      {row.conversionPct === null ? (
+                        <span className="text-ink-600">no visits yet</span>
+                      ) : (
+                        `${row.conversionPct}%`
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                <tr className="bg-paper-50 font-semibold text-ink-950">
+                  <td className="px-4 py-2.5">All surfaces</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums">{growth.totals.visits}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums">{growth.totals.subscribes}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums">{growth.totals.confirms}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums">
+                    {growth.totals.visits > 0
+                      ? `${Math.round((growth.totals.subscribes / growth.totals.visits) * 1000) / 10}%`
+                      : "no visits yet"}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="mt-2 text-xs text-ink-600">
+          Raw JSON:{" "}
+          <code className="text-xs">/api/events?key=ADMIN_KEY&amp;days=30</code>.
+          Page views live in the Vercel dashboard (Web Analytics).
+        </p>
       </section>
 
       {/* Checklist */}

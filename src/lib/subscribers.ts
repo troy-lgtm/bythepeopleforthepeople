@@ -44,8 +44,15 @@ export type Subscriber = {
   lastSeenMovementAt?: string;
   /** True when this is the designated private-pilot test user. */
   isTestUser?: boolean;
-  /** Where the subscription came from: "site", "seed-script", etc. */
+  /** How the row was created: "site", "seed-script", "admin-seed". */
   source?: string;
+  /**
+   * First-touch referral surface that produced this subscriber ("receipt",
+   * "digest", "embed", "og", "llm", "share", "direct"). This is the growth
+   * loop's attribution: which surface turns a reader into a watcher. A
+   * surface name only — never anything identifying the person.
+   */
+  refSource?: string;
 };
 
 /**

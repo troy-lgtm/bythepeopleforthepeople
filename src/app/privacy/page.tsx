@@ -32,10 +32,11 @@ export default function PrivacyPage() {
             Set your place. You can clear it any time from the place picker.
           </li>
           <li>
-            <strong>Watchlist (browser only):</strong> the records you mark to
-            watch are stored in your browser&apos;s localStorage under{" "}
-            <code>btpftp-watchlist</code>. Never transmitted unless you opt
-            into server-side sync (not yet enabled).
+            <strong>Watchlist (browser first):</strong> the records you mark
+            to watch are stored in your browser&apos;s localStorage under{" "}
+            <code>btpftp-watchlist</code>. They stay on your device unless you
+            subscribe to the email digest, which saves a copy of your ZIP and
+            causes server-side so the digest can be personalized (see below).
           </li>
           <li>
             <strong>Correction submissions:</strong> if you submit a correction
@@ -45,8 +46,9 @@ export default function PrivacyPage() {
           <li>
             <strong>Email subscriptions (opt-in):</strong> if you subscribe to
             the digest, we store your email, your chosen cadence (daily or
-            weekly), and a snapshot of your ZIP and causes so the digest can be
-            personalized. Stored in
+            weekly), a snapshot of your ZIP and causes so the digest can be
+            personalized, and the name of the surface you arrived from (for
+            example &ldquo;receipt&rdquo; or &ldquo;digest&rdquo;). Stored in
             a managed Redis store, used only to send the digest you asked for.
             Double opt-in: nothing is sent until you click the confirmation
             link. One-click unsubscribe in every email deletes all of it. Never
@@ -64,11 +66,33 @@ export default function PrivacyPage() {
 
         <h2 className="mt-8 text-lg font-semibold text-ink-950">Analytics</h2>
         <p className="mt-3">
-          When analytics are enabled, we use privacy-respecting tooling (e.g.
-          Plausible) that does not set cookies, does not fingerprint, and
-          aggregates traffic at the page level. Per-user paths are not
-          retained. The <code>PLAUSIBLE_DOMAIN</code> env var, if set, enables
-          this; absent that, no analytics fire.
+          Two things count traffic here. Both are aggregate-only: neither
+          assigns you an identifier, sets an analytics cookie, or records the
+          path you personally took through the site.
+        </p>
+        <ul className="mt-3 grid list-disc gap-2 pl-5">
+          <li>
+            <strong>Vercel Web Analytics:</strong> page-view counts, served
+            first-party from this domain (<code>/_vercel/insights</code>) by
+            our host. Cookieless, no persistent visitor id, no cross-site
+            tracking, no data sold or shared for advertising.
+          </li>
+          <li>
+            <strong>Referral counter (ours):</strong> when you arrive on a
+            link tagged <code>?ref=receipt</code>, <code>?ref=digest</code>,{" "}
+            <code>?ref=embed</code> and the like, we add <em>one</em> to a
+            daily tally for that surface, for example &ldquo;receipt: 24
+            visits on 2026-07-25.&rdquo; We store the tag and the date. We do
+            not store your IP, your user agent, a visitor id, or which page
+            you landed on. If you later subscribe in the same browser session,
+            we save that same surface name on your subscription so we can tell
+            which surfaces bring people in; it is a surface name, never
+            anything about you.
+          </li>
+        </ul>
+        <p className="mt-3">
+          Plausible remains supported as an alternative and stays dormant
+          unless <code>NEXT_PUBLIC_PLAUSIBLE_DOMAIN</code> is set.
         </p>
 
         <h2 className="mt-8 text-lg font-semibold text-ink-950">Data residency</h2>

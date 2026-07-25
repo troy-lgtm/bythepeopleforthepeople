@@ -4,8 +4,11 @@ import { readCauses } from "@/lib/causes";
 import { readPlace } from "@/lib/place";
 import { EMAIL_RE, emailConfigured, sendEmail } from "@/lib/email";
 import { isTestUserEmail, launchFlags } from "@/lib/launch-mode";
+import { EVENT_DAY_KEY } from "@/lib/growth-metrics";
 import { assertCanNotifyRecipient } from "@/lib/notification-guard";
+import { normalizeRefTag } from "@/lib/ref-tags";
 import { siteBaseUrl } from "@/lib/site-url";
+import { hashIncr } from "@/lib/store";
 import {
   type Cadence,
   type Subscriber,
@@ -26,7 +29,9 @@ export async function POST(request: NextRequest) {
     email?: string;
     cadence?: string;
     consent?: boolean;
+    ref?: string;
   };
+  const refSource = normalizeRefTag(body.ref);
 
   if (!body.email || !EMAIL_RE.test(body.email)) {
     return jsonError(400, "email_required", "Provide a valid email address.");
@@ -88,8 +93,20 @@ export async function POST(request: NextRequest) {
     lastSeenMovementAt: existing?.lastSeenMovementAt,
     isTestUser: isTestUserEmail(body.email, launchFlags()),
     source: existing?.source ?? "site",
+    // First-touch attribution sticks: a resubscribe never overwrites the
+    // surface that originally produced this watcher.
+    refSource: existing?.refSource ?? refSource,
   };
   await upsertSubscriber(sub);
+
+  // Server-side conversion counter, durable and independent of any
+  // client-side analytics being configured. Counts new subscribers only.
+  if (!existing) {
+    await hashIncr(
+      EVENT_DAY_KEY(new Date().toISOString().slice(0, 10)),
+      `subscribe:${refSource}`,
+    );
+  }
 
   // Already confirmed → treat as a preference update, no new email.
   if (sub.confirmed) {

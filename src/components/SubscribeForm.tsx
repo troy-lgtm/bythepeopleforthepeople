@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Loader2, Mail } from "lucide-react";
 import { track } from "@/lib/analytics";
+import { readStoredRef } from "@/lib/ref-tags";
 
 type Status =
   | { kind: "idle" }
@@ -44,7 +45,14 @@ export function SubscribeForm() {
       const res = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: trimmedEmail, cadence, consent }),
+        body: JSON.stringify({
+          email: trimmedEmail,
+          cadence,
+          consent,
+          // First-touch surface for this session, so a subscribe can be
+          // credited to the receipt or digest that actually drove it.
+          ref: readStoredRef() ?? undefined,
+        }),
       });
       const json = (await res.json().catch(() => ({}))) as {
         ok?: boolean;

@@ -6,8 +6,11 @@ import {
   renderMovementDigestHtml,
   renderMovementDigestText,
 } from "@/lib/movement-digest";
-import { confirmByToken } from "@/lib/subscribers";
+import { confirmByToken, getSubscriberByToken } from "@/lib/subscribers";
+import { EVENT_DAY_KEY } from "@/lib/growth-metrics";
+import { normalizeRefTag } from "@/lib/ref-tags";
 import { siteBaseUrl } from "@/lib/site-url";
+import { hashIncr } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
@@ -17,12 +20,22 @@ export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get("token") ?? "";
   if (!token) return htmlPage("Missing token", "This confirmation link is incomplete.", 400);
 
+  const alreadyConfirmed = (await getSubscriberByToken(token))?.confirmed;
   const sub = await confirmByToken(token);
   if (!sub) {
     return htmlPage(
       "Link not found",
       "This confirmation link is invalid or has already been used. Subscribe again if you still want the digest.",
       404,
+    );
+  }
+
+  // Completing double opt-in is the real "watcher gained" moment. Count it
+  // once, against the surface that first brought this person in.
+  if (!alreadyConfirmed) {
+    await hashIncr(
+      EVENT_DAY_KEY(new Date().toISOString().slice(0, 10)),
+      `confirm:${normalizeRefTag(sub.refSource)}`,
     );
   }
 
