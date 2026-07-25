@@ -210,3 +210,42 @@ Newest entry last. One entry per loop.
   cron result will confirm on its first 9:30 UTC run).
 - Next: Troy walks the loop; live ingest breadth (more causes/sessions,
   LA Council files) when ready.
+
+## Analytics — making the loop measurable (2026-07-25)
+
+- Why: an audit before launch found the growth loop's core metric
+  unmeasurable. Plausible was never configured in production (no
+  NEXT_PUBLIC_PLAUSIBLE_DOMAIN, zero analytics script tags on the live
+  site), so all seven track() call sites were silent no-ops; and the
+  referral counter was writing to Redis with no reader anywhere in the
+  app (hashGetAll had zero callers, /api/events had no GET).
+- What changed: first-touch ref captured in sessionStorage on a tagged
+  landing, sent with subscribe, persisted as `refSource` on the
+  subscriber (first touch wins on resubscribe); server-side
+  subscribe:/confirm: counters so conversion is durable regardless of
+  client analytics; growth-metrics.ts aggregating daily counters per
+  surface (conversion reports null, never 0%, with no denominator);
+  admin-gated GET /api/events; Growth signals table in the Launch
+  Center; @vercel/analytics mounted for page views (first-party,
+  cookieless, catches App Router client navigations). Privacy page
+  corrected to match reality: names both layers, discloses the referral
+  counter that was live but undisclosed, fixes the env var name, drops
+  the stale "server-side sync not yet enabled" claim.
+- Files touched: src/lib/{ref-tags,growth-metrics}.ts, store-backed
+  routes (api/events, api/subscribe, api/subscribe/confirm),
+  components/{RefTracker,SubscribeForm}.tsx, app/layout.tsx,
+  app/admin/launch/page.tsx, app/privacy/page.tsx, subscribers.ts,
+  tests/unit/growth-metrics.spec.ts, tests/growth-loop.spec.ts.
+- Tests run: 85/85 (57 unit, 28 smoke); lint, typecheck, env-less build
+  clean. Prod verified: counter POST 200, GET 401 without the admin key
+  and correct aggregates with it (durable: true), privacy disclosure
+  live, growth panel rendering. Verified in a real browser that
+  first-touch attribution holds (landed ?ref=receipt, navigated
+  ?ref=digest, stored ref stayed "receipt") and that window.va is the
+  real tracker, with /_vercel/insights/script.js returning 200.
+- Known issues: Vercel pageview totals are only visible in the Vercel
+  dashboard (nothing in-app reads them); conversion attribution is
+  per-browser-session by design, so a person who reads a receipt today
+  and subscribes next week counts as direct.
+- Next: watch the first real conversions land before flipping the launch
+  flags.
