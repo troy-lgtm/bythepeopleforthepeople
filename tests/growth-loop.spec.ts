@@ -158,6 +158,47 @@ test.describe("Private growth loop", () => {
     await expect(page.getByText(/PRIVATE_TEST_MODE is on/i)).toBeVisible();
   });
 
+  test("growth counters accept a visit and stay operator-only", async ({
+    request,
+  }) => {
+    // Public write path (what RefTracker calls).
+    const post = await request.post("/api/events", {
+      data: { name: "visit", ref: "receipt" },
+    });
+    expect(post.ok()).toBeTruthy();
+
+    // Unknown event names are rejected, so the counter can't be stuffed.
+    const bad = await request.post("/api/events", {
+      data: { name: "arbitrary", ref: "receipt" },
+    });
+    expect(bad.status()).toBe(400);
+
+    // Reads require the admin key.
+    const anon = await request.get("/api/events");
+    expect(anon.status()).toBe(401);
+
+    const admin = await request.get(
+      `/api/events?key=${encodeURIComponent(ADMIN_SECRET)}&days=7`,
+    );
+    expect(admin.ok()).toBeTruthy();
+    const json = await admin.json();
+    expect(json.data.totals.visits).toBeGreaterThan(0);
+    expect(json.data.byRef.some((r: { ref: string }) => r.ref === "receipt")).toBe(
+      true,
+    );
+  });
+
+  test("launch center shows the growth signals panel", async ({ page }) => {
+    await page.goto(`/admin/launch?key=${encodeURIComponent(ADMIN_SECRET)}`);
+    await expect(page.getByText(/growth signals/i)).toBeVisible();
+  });
+
+  test("privacy page discloses both analytics layers", async ({ page }) => {
+    await page.goto("/privacy");
+    await expect(page.getByText(/vercel web analytics/i)).toBeVisible();
+    await expect(page.getByText(/referral counter/i)).toBeVisible();
+  });
+
   test("og receipt card responds with an image", async ({ request }) => {
     const res = await request.get(`/og/receipt?id=${RECEIPT_ID}`);
     expect(res.ok()).toBeTruthy();
