@@ -1,4 +1,4 @@
-import { normalizeRefTag } from "./ref-tags";
+import { type RefKind, normalizeRefTag, refKind } from "./ref-tags";
 import { hashGetAll, storeIsDurable } from "./store";
 
 /**
@@ -18,6 +18,8 @@ export const EVENT_DAY_KEY = (day: string) => `evt:${day}`;
 
 export type RefRow = {
   ref: string;
+  /** Whether a click on this tag is an arrival from outside or a move inside. */
+  kind: RefKind;
   visits: number;
   subscribes: number;
   confirms: number;
@@ -30,6 +32,14 @@ export type GrowthMetrics = {
   from: string;
   to: string;
   totals: { visits: number; subscribes: number; confirms: number };
+  /**
+   * The split that answers "did anyone come here from outside?": inbound
+   * counts clicks on links that only exist off-site (digest, embed, og,
+   * llm, share); internal counts clicks between our own pages (receipt,
+   * feed, cause). Only inbound is evidence of an arrival.
+   */
+  inbound: { visits: number; subscribes: number };
+  internal: { visits: number; subscribes: number };
   byRef: RefRow[];
   daily: Array<{ date: string; visits: number; subscribes: number }>;
   /** False when counters live in the ephemeral in-memory store. */
@@ -65,7 +75,14 @@ export async function getGrowthMetrics(
       const ref = normalizeRefTag(rawRef);
       const row =
         byRef.get(ref) ??
-        ({ ref, visits: 0, subscribes: 0, confirms: 0, conversionPct: null } as RefRow);
+        ({
+          ref,
+          kind: refKind(ref),
+          visits: 0,
+          subscribes: 0,
+          confirms: 0,
+          conversionPct: null,
+        } as RefRow);
 
       if (name === "visit") {
         row.visits += count;
@@ -86,6 +103,18 @@ export async function getGrowthMetrics(
     daily.push({ date: day, visits: dayVisits, subscribes: daySubscribes });
   }
 
+  const inbound = { visits: 0, subscribes: 0 };
+  const internal = { visits: 0, subscribes: 0 };
+  for (const r of byRef.values()) {
+    if (r.kind === "inbound") {
+      inbound.visits += r.visits;
+      inbound.subscribes += r.subscribes;
+    } else if (r.kind === "internal") {
+      internal.visits += r.visits;
+      internal.subscribes += r.subscribes;
+    }
+  }
+
   const rows = Array.from(byRef.values())
     .map((r) => ({
       ...r,
@@ -100,6 +129,8 @@ export async function getGrowthMetrics(
     from: keys[0],
     to: keys[keys.length - 1],
     totals,
+    inbound,
+    internal,
     byRef: rows,
     daily,
     durable: storeIsDurable(),

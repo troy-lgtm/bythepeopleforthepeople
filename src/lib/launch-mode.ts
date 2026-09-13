@@ -23,6 +23,12 @@ export type LaunchFlags = {
   growthLaunchEnabled: boolean;
   allowPublicDigests: boolean;
   allowNonTestEmails: boolean;
+  /**
+   * The operator's own Slack incoming-webhook URL for the weekly growth
+   * digest. The webhook equivalent of the test user: the one webhook that
+   * may receive a post while private test mode is on. Empty = none.
+   */
+  operatorWebhookUrl: string;
 };
 
 type Env = Record<string, string | undefined>;
@@ -47,6 +53,7 @@ export function parseLaunchFlags(env: Env): LaunchFlags {
     growthLaunchEnabled: flagTrue(env.GROWTH_LAUNCH_ENABLED),
     allowPublicDigests: flagTrue(env.ALLOW_PUBLIC_DIGESTS),
     allowNonTestEmails: flagTrue(env.ALLOW_NON_TEST_EMAILS),
+    operatorWebhookUrl: (env.GROWTH_DIGEST_WEBHOOK_URL ?? "").trim(),
   };
 }
 

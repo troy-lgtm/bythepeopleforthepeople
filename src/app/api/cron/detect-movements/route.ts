@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { jsonError, jsonOk, timingSafeEqualStr } from "@/lib/api";
+import { jsonError, jsonPrivate, timingSafeEqualStr } from "@/lib/api";
 import { detectAndStoreMovements, movementCounts } from "@/lib/movement-store";
 import { storeMode } from "@/lib/store";
 
@@ -17,7 +17,7 @@ export const maxDuration = 300;
 async function handle(request: NextRequest) {
   const expected = process.env.CRON_SECRET;
   if (!expected) {
-    return jsonOk({
+    return jsonPrivate({
       skipped: true,
       reason: "cron_secret_unset",
       note: "CRON_SECRET is not set. Refusing to run until it is configured.",
@@ -33,7 +33,7 @@ async function handle(request: NextRequest) {
 
   const run = await detectAndStoreMovements();
   const counts = await movementCounts();
-  return jsonOk({
+  return jsonPrivate({
     run,
     counts,
     store: storeMode(),

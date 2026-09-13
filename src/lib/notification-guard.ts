@@ -16,6 +16,10 @@ import { listLength, listPushCapped, listRange } from "./store";
  * Rules (fail closed):
  * - sms and push are disabled, full stop. No wiring exists and none may send.
  * - webhooks are blocked while private test mode is on.
+ * - operator_webhook is the webhook twin of the test user: allowed only when
+ *   the recipient is exactly the configured GROWTH_DIGEST_WEBHOOK_URL. It
+ *   carries aggregate operator numbers to the operator's own Slack; a public
+ *   webhook can never ride it because the URL must match the env value.
  * - email to the test user is always allowed (subject to provider config).
  * - email to anyone else is blocked while PRIVATE_TEST_MODE is on, and
  *   blocked while ALLOW_NON_TEST_EMAILS is not "true".
@@ -27,7 +31,12 @@ if (typeof window !== "undefined") {
   throw new Error("notification-guard is server-side only");
 }
 
-export type NotificationChannel = "email" | "sms" | "webhook" | "push";
+export type NotificationChannel =
+  | "email"
+  | "sms"
+  | "webhook"
+  | "operator_webhook"
+  | "push";
 
 export type GuardDecision = {
   allowed: boolean;
@@ -63,6 +72,18 @@ export function evaluateRecipient(
     return publicLaunchUnlocked(flags)
       ? { allowed: true, reason: "launch_unlocked" }
       : { allowed: false, reason: "webhook_blocked_in_private_test_mode" };
+  }
+  if (channel === "operator_webhook") {
+    const configured = flags.operatorWebhookUrl;
+    if (!configured) {
+      return { allowed: false, reason: "operator_webhook_unconfigured" };
+    }
+    if (!configured.startsWith("https://")) {
+      return { allowed: false, reason: "operator_webhook_not_https" };
+    }
+    return recipient.trim() === configured
+      ? { allowed: true, reason: "operator_webhook" }
+      : { allowed: false, reason: "operator_webhook_mismatch" };
   }
 
   // channel === "email"
