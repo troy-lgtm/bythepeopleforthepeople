@@ -18,6 +18,7 @@ import {
 } from "./notification-guard";
 import { storeIsDurable, storeMode } from "./store";
 import { getSubscriber, listAll } from "./subscribers";
+import { getVisitorReport } from "./vercel-analytics";
 
 /**
  * Launch readiness checklist. Each check is real where reality is reachable
@@ -226,6 +227,18 @@ export async function runLaunchChecklist(): Promise<LaunchCheck[]> {
     sentToTroy
       ? "At least one delivered digest in the log."
       : `No delivered digest yet (${await countDigestLog()} log entries). Use the button below once email is configured.`,
+    false,
+  );
+
+  // 13b. Visitor counting: the growth loop's core metric must be readable.
+  const visitors = await getVisitorReport(7);
+  add(
+    "visitor-counting",
+    "Real visitors are being counted",
+    visitors.status === "ok" ? "pass" : "warn",
+    visitors.status === "ok"
+      ? `Vercel Web Analytics is on and readable (${visitors.totals?.pageviews ?? 0} page views in the last 7 days).`
+      : visitors.message,
     false,
   );
 

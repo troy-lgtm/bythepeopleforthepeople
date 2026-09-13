@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { jsonError, jsonOk, timingSafeEqualStr } from "@/lib/api";
+import { jsonError, jsonPrivate, timingSafeEqualStr } from "@/lib/api";
 import { logDigest } from "@/lib/digest-log";
 import { emailConfigured, sendEmail } from "@/lib/email";
 import {
@@ -27,7 +27,7 @@ const MAX_PER_RUN = 100;
 async function handle(request: NextRequest) {
   const expected = process.env.CRON_SECRET;
   if (!expected) {
-    return jsonOk({
+    return jsonPrivate({
       skipped: true,
       reason: "cron_secret_unset",
       note: "CRON_SECRET is not set. Refusing to send until it is configured.",
@@ -42,10 +42,10 @@ async function handle(request: NextRequest) {
   }
 
   if (!isStoreConfigured()) {
-    return jsonOk({ skipped: true, reason: "store_not_configured", sent: 0 });
+    return jsonPrivate({ skipped: true, reason: "store_not_configured", sent: 0 });
   }
   if (!emailConfigured()) {
-    return jsonOk({ skipped: true, reason: "email_not_configured", sent: 0 });
+    return jsonPrivate({ skipped: true, reason: "email_not_configured", sent: 0 });
   }
 
   const now = new Date();
@@ -128,7 +128,7 @@ async function handle(request: NextRequest) {
     }
   }
 
-  return jsonOk({
+  return jsonPrivate({
     ranAt: now.toISOString(),
     cadenceDay: isMonday ? "monday" : "weekday",
     eligible: subscribers.length,

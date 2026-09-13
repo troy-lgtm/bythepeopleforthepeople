@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-// Vercel Web Analytics: first-party (served from this domain under
-// /_vercel/insights), cookieless, no persistent visitor id, no cross-site
-// tracking. Counts page views including App Router client navigations.
-import { Analytics as VercelWebAnalytics } from "@vercel/analytics/next";
 import { Analytics } from "@/components/Analytics";
 import { RefTracker } from "@/components/RefTracker";
+import { SiteAnalytics } from "@/components/SiteAnalytics";
 import { JsonLd } from "@/components/JsonLd";
 import { organizationSchema, websiteSchema } from "@/lib/schema";
 import "./globals.css";
@@ -100,7 +97,7 @@ export default function RootLayout({
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="font-sans antialiased">
         {children}
-        <VercelWebAnalytics />
+        <SiteAnalytics />
         <Analytics />
         <RefTracker />
         <JsonLd data={[websiteSchema(), organizationSchema()]} />

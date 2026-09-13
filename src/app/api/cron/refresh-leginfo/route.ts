@@ -1,6 +1,6 @@
 import { type NextRequest } from "next/server";
 import { sourceRecords } from "@/data/records";
-import { jsonError, jsonOk, timingSafeEqualStr } from "@/lib/api";
+import { jsonError, jsonPrivate, timingSafeEqualStr } from "@/lib/api";
 import { assertCanNotifyRecipient } from "@/lib/notification-guard";
 
 export const dynamic = "force-dynamic";
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return jsonOk({
+  return jsonPrivate({
     ranAt: new Date().toISOString(),
     checked: checks.length,
     healthy: checks.length - failing.length,

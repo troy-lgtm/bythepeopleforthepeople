@@ -66,6 +66,14 @@ The product is build-passing locally without any third-party keys. The following
 - `CICERO_API_KEY` or a Civic Information API replacement for municipal representative lookup (federal works with bundled data)
 - SMS is deliberately not wired; the notification guard blocks the channel outright
 
+## Knowing whether anyone came
+
+Two layers, both aggregate-only, both surfaced in the Launch Center and in the Monday growth digest:
+
+- **Real people**: Vercel Web Analytics (bot-filtered page views, unique visitors, top pages, referrers, countries, and the share / subscribe / cause-created actions). The `@vercel/analytics` script is mounted, but Vercel only keeps data once Web Analytics is **enabled for the project in the Vercel dashboard** (project, Analytics tab, Enable). To read the numbers back into the app, set `VERCEL_ANALYTICS_TOKEN` (a Vercel access token), `VERCEL_TEAM_ID` and `VERCEL_PROJECT_ID`. Until both are done the Launch Center says exactly which step is missing.
+- **Arrivals**: our own referral counters (`?ref=` tags). The Launch Center splits them into clicks that came from outside the site (digest, embed, og, llm, share) and clicks between our own pages (receipt, feed, cause); only the first kind is evidence that someone found the site. Known crawlers are skipped server-side; the user agent is checked and never stored.
+- **Growth digest**: `/api/cron/growth-digest` runs Mondays 14:00 UTC and posts one message (visitors, arrivals, demand, loop health) to `GROWTH_DIGEST_WEBHOOK_URL` (Slack incoming webhook, via the guard's operator-only channel) and emails the test user. `?dry=1` renders without sending; the Launch Center has a send button and a preview link. The "Don't count this browser" button in the Launch Center keeps the operator's own visits out of both layers.
+
 ## Methodology
 
 See `/methodology` in the running app, or `src/app/methodology/page.tsx`. The principles: public records first, facts separated from interpretation, no partisan scores, no endorsements, provenance for every claim, cited AI summaries only, missing means missing, understanding not persuasion.

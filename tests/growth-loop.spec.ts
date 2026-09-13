@@ -193,6 +193,70 @@ test.describe("Private growth loop", () => {
     await expect(page.getByText(/growth signals/i)).toBeVisible();
   });
 
+  test("operator counter reads are never CDN-cacheable", async ({ request }) => {
+    const admin = await request.get(
+      `/api/events?key=${encodeURIComponent(ADMIN_SECRET)}&days=7`,
+    );
+    expect(admin.ok()).toBeTruthy();
+    expect(admin.headers()["cache-control"]).toBe("private, no-store");
+  });
+
+  test("known crawlers do not increment the visit counter", async ({ request }) => {
+    const res = await request.post("/api/events", {
+      data: { name: "visit", ref: "digest" },
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+      },
+    });
+    expect(res.ok()).toBeTruthy();
+    const json = await res.json();
+    expect(json.data.recorded).toBe(false);
+    expect(json.data.reason).toBe("automated_client");
+  });
+
+  test("launch center answers whether anyone came and offers the growth digest", async ({
+    page,
+  }) => {
+    await page.goto(`/admin/launch?key=${encodeURIComponent(ADMIN_SECRET)}`);
+    await expect(page.getByRole("heading", { name: /visitors \(last 7 days\)/i })).toBeVisible();
+    // No Vercel token in the smoke env: the panel must say exactly what is missing.
+    await expect(page.getByText(/cannot read the visitor numbers yet/i)).toBeVisible();
+    await expect(page.getByRole("button", { name: /don't count this browser/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /send growth digest/i })).toBeVisible();
+    await expect(page.getByText(/what a click means/i)).toBeVisible();
+  });
+
+  test("growth digest preview is admin-only and sends nothing", async ({ request }) => {
+    const anon = await request.get("/api/admin/launch/growth-digest-preview");
+    expect(anon.status()).toBe(401);
+
+    const text = await request.get(
+      `/api/admin/launch/growth-digest-preview?key=${encodeURIComponent(ADMIN_SECRET)}`,
+    );
+    expect(text.ok()).toBeTruthy();
+    expect(text.headers()["content-type"]).toContain("text/plain");
+    expect(text.headers()["cache-control"]).toBe("private, no-store");
+    const body = await text.text();
+    expect(body).toContain("GROWTH DIGEST");
+    expect(body).toContain("PEOPLE (Vercel Web Analytics, bot-filtered)");
+    expect(body).toMatch(/Launch Center: https?:\/\/\S+\/admin\/launch/);
+
+    const html = await request.get(
+      `/api/admin/launch/growth-digest-preview?key=${encodeURIComponent(ADMIN_SECRET)}&format=html`,
+    );
+    expect(html.headers()["content-type"]).toContain("text/html");
+  });
+
+  test("growth digest cron refuses to run without CRON_SECRET", async ({ request }) => {
+    const res = await request.get("/api/cron/growth-digest");
+    expect(res.ok()).toBeTruthy();
+    const json = await res.json();
+    expect(json.data.skipped).toBe(true);
+    expect(json.data.reason).toBe("cron_secret_unset");
+    expect(res.headers()["cache-control"]).toBe("private, no-store");
+  });
+
   test("privacy page discloses both analytics layers", async ({ page }) => {
     await page.goto("/privacy");
     await expect(page.getByText(/vercel web analytics/i)).toBeVisible();

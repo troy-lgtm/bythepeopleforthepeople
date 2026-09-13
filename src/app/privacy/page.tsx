@@ -75,7 +75,9 @@ export default function PrivacyPage() {
             <strong>Vercel Web Analytics:</strong> page-view counts, served
             first-party from this domain (<code>/_vercel/insights</code>) by
             our host. Cookieless, no persistent visitor id, no cross-site
-            tracking, no data sold or shared for advertising.
+            tracking, no data sold or shared for advertising. It also counts
+            a few named actions (a share, a subscribe, a cause created) as
+            tallies, with no text you typed attached.
           </li>
           <li>
             <strong>Referral counter (ours):</strong> when you arrive on a
@@ -84,7 +86,8 @@ export default function PrivacyPage() {
             daily tally for that surface, for example &ldquo;receipt: 24
             visits on 2026-07-25.&rdquo; We store the tag and the date. We do
             not store your IP, your user agent, a visitor id, or which page
-            you landed on. If you later subscribe in the same browser session,
+            you landed on. (The server does glance at the user agent to skip
+            known crawlers before adding one; it is not kept.) If you later subscribe in the same browser session,
             we save that same surface name on your subscription so we can tell
             which surfaces bring people in; it is a surface name, never
             anything about you.

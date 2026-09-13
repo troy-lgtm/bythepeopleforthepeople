@@ -41,6 +41,23 @@ export function timingSafeEqualStr(a: string, b: string): boolean {
   return timingSafeEqual(bufA, bufB);
 }
 
+/**
+ * Operator and cron responses: same envelope as jsonOk, but never cached.
+ * jsonOk marks responses `public, s-maxage=600`, which lets the CDN serve an
+ * admin-keyed or cron response to the next caller without checking the key.
+ * Anything gated by a secret, or produced by a run that must actually
+ * execute, goes through here.
+ */
+export function jsonPrivate<T extends object>(data: T) {
+  const response = NextResponse.json({
+    ok: true,
+    data,
+    meta: { generatedAt: new Date().toISOString() },
+  });
+  response.headers.set("Cache-Control", "private, no-store");
+  return response;
+}
+
 export function jsonError(
   status: number,
   code: string,

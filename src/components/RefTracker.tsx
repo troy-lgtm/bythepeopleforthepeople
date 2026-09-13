@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { operatorOptedOut } from "@/lib/operator-opt-out";
 import { storeFirstTouchRef } from "@/lib/ref-tags";
 
 /**
@@ -9,7 +10,8 @@ import { storeFirstTouchRef } from "@/lib/ref-tags";
  * attributed to the surface that actually brought the person in.
  *
  * Anonymous by construction: one counter increment per tagged page load, no
- * cookies, no ids, no PII, nothing sent on untagged loads.
+ * cookies, no ids, no PII, nothing sent on untagged loads. Browsers the
+ * operator has opted out (Launch Center) send nothing at all.
  */
 export function RefTracker() {
   useEffect(() => {
@@ -17,6 +19,7 @@ export function RefTracker() {
       const ref = new URLSearchParams(window.location.search).get("ref");
       if (!ref) return;
       storeFirstTouchRef(ref);
+      if (operatorOptedOut()) return;
       void fetch("/api/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

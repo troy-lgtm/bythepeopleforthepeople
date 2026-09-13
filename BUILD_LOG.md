@@ -249,3 +249,62 @@ Newest entry last. One entry per loop.
   and subscribes next week counts as direct.
 - Next: watch the first real conversions land before flipping the launch
   flags.
+
+## Visitors — answering "did anyone come?" (2026-09-13)
+
+- Why: seven weeks after the analytics work, the honest answer to "do we
+  know if anyone visited?" was no. Vercel Web Analytics was never
+  ENABLED for the project in the Vercel dashboard (the API returns
+  `web_analytics_not_enabled`), so the mounted script has been discarding
+  every page view since 2026-07-25; the Launch Center's "page views live
+  in the Vercel dashboard" pointed at an empty dashboard. The referral
+  counters (144 tagged loads over 90 days) mostly count clicks between
+  our own pages (receipt -> receipt, what-moved -> receipt) plus Google's
+  JavaScript renderer, so they could not say whether a person arrived.
+  Also found: the admin-keyed `/api/events` GET was served `public,
+  s-maxage=600`, so the CDN handed the operator aggregates to anyone
+  hitting the URL within 10 minutes of an admin read (confirmed on prod,
+  `x-vercel-cache: HIT` without the key).
+- What changed: `vercel-analytics.ts` reads page views, unique visitors,
+  daily trend, top pages, referrers, countries and custom events through
+  Vercel's public Web Analytics API (VERCEL_ANALYTICS_TOKEN + team/project
+  ids), every failure a plain-language status (not configured / not
+  enabled / error), memoized 60s per process. `track()` now sends custom
+  events to Vercel (share, subscribe, cause_created) instead of a Plausible
+  hook nobody configured. Ref tags are classified inbound (digest, embed,
+  og, llm, share = arrived from outside) vs internal (receipt, feed,
+  cause = moved inside); growth metrics carry both totals. `/api/events`
+  POST skips known crawlers (user agent checked in memory, never stored);
+  operator and cron responses use the new `jsonPrivate` (`private,
+  no-store`). Operator opt-out ("Don't count this browser") keeps Troy's
+  own visits out of both layers via localStorage + Vercel's beforeSend.
+  Weekly growth digest (`growth-digest.ts`, Mondays 14:00 UTC): visitors,
+  arrivals, demand (new watchers, strangers turned away by private mode),
+  loop health; delivered to Slack through a new guard channel
+  `operator_webhook` that only ever allows the exact
+  GROWTH_DIGEST_WEBHOOK_URL, and by email to the test user through the
+  guarded sendEmail; no-op when neither is configured; `?dry=1` preview;
+  Launch Center gains a Visitors panel with the exact missing step, a
+  send button, preview links, status tiles, and an advisory checklist
+  item. Privacy page, README, .env.example updated.
+- Files touched: src/lib/{vercel-analytics,bot-filter,operator-opt-out,
+  growth-digest,growth-digest-delivery}.ts (new); src/lib/{api,analytics,
+  ref-tags,growth-metrics,launch-mode,notification-guard,launch-checklist}.ts;
+  src/components/{SiteAnalytics,OperatorOptOut}.tsx (new), RefTracker.tsx;
+  src/app/layout.tsx; api/events, api/cron/{growth-digest (new),
+  send-digests,detect-movements,refresh-leginfo}, api/digest/send,
+  api/admin/launch/{send-growth-digest,growth-digest-preview} (new);
+  admin/launch/page.tsx; privacy/page.tsx; vercel.json; README;
+  .env.example; tests/unit/visitors.spec.ts (new), tests/growth-loop.spec.ts.
+- Tests run: 104/104 (71 unit incl. 14 new, 33 smoke incl. 5 new); lint,
+  typecheck, env-less build clean. Live probe of the reader against the
+  real Vercel API maps the project's state to `not_enabled`. Headless
+  browser check of the Launch Center (zero console errors; opt-out
+  persists across reload) and of the digest email preview.
+- Known issues: page views only start counting once Web Analytics is
+  enabled in the Vercel dashboard (one click, Troy), and the app can only
+  read them once VERCEL_ANALYTICS_TOKEN + ids are set; visitor totals
+  over a window are daily uniques added up (a ceiling); the bot filter
+  is a deny-list, so unknown crawlers still count in our own counters.
+- Next: enable Web Analytics, set the token, watch the first Monday
+  digest land.

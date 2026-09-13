@@ -1,6 +1,6 @@
 import { type NextRequest } from "next/server";
 import type { Cause } from "@/data/types";
-import { jsonError, jsonOk, timingSafeEqualStr } from "@/lib/api";
+import { jsonError, jsonPrivate, timingSafeEqualStr } from "@/lib/api";
 import { logDigest } from "@/lib/digest-log";
 import { isEmail, sendEmail } from "@/lib/email";
 import {
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
   const text = renderMovementDigestText(digest, BASE, urls);
 
   if (body.dryRun) {
-    return jsonOk({
+    return jsonPrivate({
       dryRun: true,
       recipient: body.to,
       subject: digest.subject,
@@ -106,5 +106,5 @@ export async function POST(request: NextRequest) {
   if (!result.ok) {
     return jsonError(502, "delivery_error", result.error ?? "Unknown delivery error.");
   }
-  return jsonOk({ sent: true, recipient: body.to, providerId: result.id ?? null });
+  return jsonPrivate({ sent: true, recipient: body.to, providerId: result.id ?? null });
 }

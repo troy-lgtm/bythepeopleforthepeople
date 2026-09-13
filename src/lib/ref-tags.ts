@@ -24,6 +24,33 @@ export type RefTag = (typeof REF_TAGS)[number] | "other";
 
 const ALLOWED = new Set<string>(REF_TAGS);
 
+/**
+ * Where a tag can be clicked FROM. This is what makes the counters honest:
+ * "digest", "embed", "og", "llm" and "share" links only exist outside the
+ * site (an email, a third-party embed, a social card, an AI answer, a copied
+ * share link), so a click on one is a real arrival from outside. "receipt",
+ * "feed" and "cause" links live on our own pages, so a click on one is a
+ * person already here moving deeper — engagement, not an arrival.
+ */
+export type RefKind = "inbound" | "internal" | "direct";
+
+const INBOUND = new Set<string>(["digest", "embed", "og", "llm", "share"]);
+const INTERNAL = new Set<string>(["receipt", "feed", "cause"]);
+
+export function refKind(tag: string | null | undefined): RefKind {
+  const v = normalizeRefTag(tag);
+  if (INBOUND.has(v)) return "inbound";
+  if (INTERNAL.has(v)) return "internal";
+  return "direct";
+}
+
+/** Plain-language label for the Launch Center and the growth digest. */
+export function refKindLabel(kind: RefKind): string {
+  if (kind === "inbound") return "arrived from outside";
+  if (kind === "internal") return "clicked inside the site";
+  return "untagged";
+}
+
 /** Unknown or malformed tags collapse to "other" — never stored verbatim. */
 export function normalizeRefTag(value: string | null | undefined): RefTag {
   const v = (value ?? "").trim().toLowerCase();
